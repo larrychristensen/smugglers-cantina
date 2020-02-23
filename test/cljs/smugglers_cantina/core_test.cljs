@@ -1,0 +1,7 @@
+(ns smugglers-cantina.core-test
+  (:require [cljs.test :refer-macros [deftest testing is]]
+            [smugglers-cantina.core :as core]))
+
+(deftest fake-test
+  (testing "fake description"
+    (is (= 1 2))))
