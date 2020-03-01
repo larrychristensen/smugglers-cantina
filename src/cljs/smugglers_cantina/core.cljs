@@ -6,7 +6,7 @@
    [smugglers-cantina.routes :as routes]
    [smugglers-cantina.views :as views]
    [smugglers-cantina.config :as config]
-   ))
+   [smugglers-cantina.auth :as auth]))
 
 (prn "JUANCHO")
 
@@ -20,7 +20,8 @@
                   (.getElementById js/document "app")))
 
 (defn init []
-  (routes/app-routes)
+  #_(routes/app-routes)
   (re-frame/dispatch-sync [::events/initialize-db])
   (dev-setup)
   (mount-root))
+

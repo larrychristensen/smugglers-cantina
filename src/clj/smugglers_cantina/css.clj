@@ -1,14 +1,52 @@
 (ns smugglers-cantina.css
   (:require [garden.def :refer [defstyles]]))
 
+(defn box-prop [class-prefix prop-prefix]
+  (mapcat
+   (fn [i]
+     (mapv
+      (fn [[position-n position-v]]
+        [(keyword (str "." class-prefix position-n i))
+         {(keyword (str prop-prefix "-" position-v)) (str i "px")}])
+      {"l" "left"
+       "r" "right"
+       "b" "bottom"
+       "t" "top"}))
+   (range 1 50)))
+
 (def margins
-  [[:.m-l-10 {:margin-left "10px"}]
-   [:.m-l-2 {:margin-left "2px"}]
-   [:.m-b-10 {:margin-bottom "10px"}]])
+  (box-prop "m" "margin"))
+
+(prn "MARGINS" margins)
+
+(def flexbox
+  [[:.flex {:display :flex}]
+   [:.jce {:justify-content :flex-end}]
+   [:.jcsa {:justify-content :space-around}]
+   [:.jcsb {:justify-content :space-between}]
+   [:.aic {:align-items :center}]])
+
+(def font-sizes
+  (mapv
+   (fn [v]
+     [(keyword (str ".fs" v))
+      {:font-size (str v "px")}])
+   (range 10 40)))
+
+(def red "#e8c627")
+(def blue "#235789")
+
+(def colors
+  [[:.red {:color red}]
+   [:.blue {:color blue}]])
 
 (def screen
   (concat
-   [[:input:focus
+   [[:button {:cursor :pointer
+              :color :black}]
+    [:.bold {:font-weight :bold}]
+    [:.white {:color :white}]
+    [:input:focus
      {:outline "1px solid red"
       :outline-radius "3px"}]
     [:select:focus
@@ -18,14 +56,16 @@
             :margin "0"
             :font-family "Roboto;sans-serif"}]
     [:.header-logo {:height "60px"}]
+    [:.header-sublogo {:height "43px"}]
     [:.header
      {:background-color :black
       :padding "5px"}]
     [:.page
      {:padding "0 20px"}]
     [:.page-header
-     {:color :red
-      :-webkit-text-stroke "1px black"
+     {:color blue
+      ;;:-webkit-text-stroke "1px black"
+      :font-weight "900"
       }]
     [:.text-field
      {:outline :none
@@ -162,5 +202,14 @@
     [:.ability-die-image
      {:height "20px"}]
     [:.proficiency-die-image
-     {:height "15px"}]]
-   margins))
+     {:height "15px"}]
+    [:.header-button
+     {:height "50px"
+      :background-color red
+      :border-color red
+      :font-weight :bold
+      :border-radius "3px"}]]
+   margins
+   flexbox
+   font-sizes
+   colors))

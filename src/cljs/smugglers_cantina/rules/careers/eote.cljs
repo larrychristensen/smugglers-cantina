@@ -1,5 +1,80 @@
 (ns smugglers-cantina.rules.careers.eote)
 
+(def none #{})
+(def l #{:left})
+(def r #{:right})
+(def d #{:down})
+(def lr #{:left :right})
+(def ld #{:left :down})
+(def rd #{:right :down})
+(def lrd #{:left :right :down})
+
+(def assassin-tree
+  [[[:grit :d]
+    [:lethal-blows :d]
+    [:stalker :d]
+    [:dodge :d]]
+   [[:precise-aim :rd]
+    [:jump-up :lrd]
+    [:quick-strike :lrd]
+    [:quick-draw :ld]]
+   [[:targeted-blow :d]
+    [:stalker :rd]
+    [:lethal-blows :ld]
+    [:anatomy-lessons :d]]
+   [[:stalker :rd]
+    [:sniper-shot :ld]
+    [:dodge :d]
+    [:lethal-blows :d]]
+   [[:precise-aim]
+    [:deadly-accuracy]
+    [:dedication]
+    [:master-of-shadows]]])
+
+(def gadgeteer-tree
+  [[[:brace]
+    [:toughened :d]
+    [:intimidating]
+    [:defensive-stance :d]]
+   [[:spare-clip :r]
+    [:jury-rigged :lrd]
+    [:point-blank :l]
+    [:disorient :d]]
+   [[:toughened :r]
+    [:armor-master :lrd]
+    [:natural-enforcer :l]
+    [:stunning-blow :d]]
+   [[:jury-rigged :r]
+    [:tinkerer :lrd]
+    [:deadly-accuracy :l]
+    [:improved-stunning-blow :d]]
+   [[:intimidating :r]
+    [:dedication :lr]
+    [:improved-armor-master :l]
+    [:crippling-blow]]])
+
+(def survivalist-tree
+  [[[:forager :d]
+    [:stalker :d]
+    [:outdoorsman :d]
+    [:expert-tracker]]
+   [[:outdoorsman :rd]
+    [:swift :lrd]
+    [:hunter :lrd]
+    [:soft-spot :ld]]
+   [[:toughened :d]
+    [:expert-tracker :d]
+    [:stalker :rd]
+    [:natural-outdoorsman :ld]]
+   [[:toughened :d]
+    [:hunter]
+    [:expert-tracker :d]
+    [:blooded :d]]
+   [[:enduring :r]
+    [:dedication :lr]
+    [:grit :l]
+    [:heroic-fortitude]]])
+
 (def careers
   [{:name "Bounty Hunter"
     :key :bounty-hunter
@@ -16,19 +91,22 @@
                        :skills [:melee
                                 :ranged-heavy
                                 :skulduggery
-                                :stealth]}
+                                :stealth]
+                       :talent-tree assassin-tree}
                       {:name "Gadgeteer"
                        :key :gadgeteer
                        :skills [:brawl
                                 :coercion
                                 :mechanics
-                                :ranged-light]}
+                                :ranged-light]
+                       :talent-tree gadgeteer-tree}
                       {:name "Survivalist"
                        :key :survivalist
                        :skills [:xenology
                                 :perception
                                 :resilience
-                                :survival]}]}
+                                :survival]
+                       :talent-tree survivalist-tree}]}
    {:name "Colonist"
     :key :colonist
     :skills [:charm
