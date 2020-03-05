@@ -1,7 +1,6 @@
 # smugglers-cantina
 
-A [re-frame](https://github.com/day8/re-frame) application designed to ... well, that part is up to
-you.
+The code for https://smugglers-cantina.com, a character builder for Star Wars Roleplaying.
 
 ## Getting Started
 
