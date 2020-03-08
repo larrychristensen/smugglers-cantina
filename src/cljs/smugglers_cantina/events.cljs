@@ -126,22 +126,32 @@
         item))
     v)))
 
+(defn remove-value [v value]
+  (remove
+   #(= value %)
+   v))
+
+(reg-event-db
+ ::set-character-sheet-tab
+ (fn-traced [db [_ tab-key]]
+            (assoc db :character-sheet-tab tab-key)))
+
 (reg-event-db
  ::add-additional-specialization
- (fn-traced [db _]
+ (fn-traced [db [_ spec-key]]
             (update-in db
                        [:character :additional-specializations]
                        (fn [specs]
                          (let [specs (or specs [])]
-                           (conj specs :none))))))
+                           (conj specs spec-key))))))
 
 (reg-event-db
  ::remove-additional-specialization
- (fn-traced [db [_ index]]
+ (fn-traced [db [_ key]]
             (update-in db
                        [:character :additional-specializations]
-                       remove-item
-                       index)))
+                       remove-value
+                       key)))
 
 (reg-event-db
  ::set-additional-specialization
@@ -152,20 +162,19 @@
 
 (reg-event-db
  ::add-talent
- (fn-traced [db [_ specialization-key]]
+ (fn-traced [db [_ specialization-key talent-key]]
             (update-in db
                        [:character :talents specialization-key]
-                       (fn [specs]
-                         (let [specs (or specs [])]
-                           (conj specs :none))))))
+                       (fn [talents]
+                         (conj (or talents #{}) talent-key)))))
 
 (reg-event-db
  ::remove-talent
- (fn-traced [db [_ specialization-key index]]
+ (fn-traced [db [_ specialization-key talent-key]]
             (update-in db
                        [:character :talents specialization-key]
-                       remove-item
-                       index)))
+                       disj
+                       talent-key)))
 
 (reg-event-db
  ::set-talent
@@ -224,3 +233,14 @@
             (.removeItem js/localStorage "username")
             (.removeItem js/localStorage "jwt-token")
             {:db (dissoc (:db cofx) :username :jwt-token :auth)}))
+
+
+(reg-event-db
+ :character/set-experience-points
+ (fn [db [_ v]]
+   (assoc-in db [:character :experience-points] v)))
+
+(reg-event-db
+ :character/offset-experience-points
+ (fn [db [_ v]]
+   (update-in db [:character :experience-points] (fn [xps] (+ (or xps 0) v)))))

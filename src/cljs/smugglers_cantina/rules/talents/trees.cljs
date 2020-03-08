@@ -56,6 +56,7 @@
           {:key (talent-node-keyword talent-key i)
            :level (inc i)
            :talent talent-key
+           :dirs (set (connection-map connections-key))
            :edges (map
                    (partial make-edge talent-tree i j)
                    dirs)}))

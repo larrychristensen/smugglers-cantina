@@ -1,5 +1,6 @@
 (ns smugglers-cantina.views
   (:require
+   [clojure.string :as s]
    [re-frame.core :as re-frame :refer [subscribe dispatch]]
    [smugglers-cantina.auth :as auth]
    [smugglers-cantina.subs :as subs]
@@ -29,7 +30,7 @@
 ;; home
 
 #_(defn home-panel []
-  (let [name (re-frame/subscribe [::subs/name])]
+  (let [name (subscribe [::subs/name])]
     [:div
      [:h1 (str "Hello from " @name ". This is the Home Page.")]
 
@@ -71,9 +72,10 @@
    [dropdown-field options value value-fn title-fn on-change]])
 
 (defn text-field [value on-change]
-  [:input.text-field
-   {:value value
-    :on-change on-change}])
+  [:div.flex
+   [:input.text-field
+    {:value value
+     :on-change on-change}]])
 
 (defn labeled-text-field [label value on-change]
   [:div
@@ -81,150 +83,18 @@
    [text-field value on-change]])
 
 
+(defn event-value [e]
+  (.. e -target -value))
+
 ;; character sheet
 
-(defn on-add-talent [specialization-key _]
-  (re-frame/dispatch [::events/add-talent specialization-key]))
-
-(defn on-talent-change [specialization-key i e]
-  (re-frame/dispatch [::events/set-talent specialization-key i (keyword (.. e -target -value))]))
-
-(defn on-remove-talent [specialization-key i _]
-  (re-frame/dispatch [::events/remove-talent specialization-key i]))
-
-(defn talent-description [{:keys [name level]}]
-  (str name " (" (* 5 level) "xp)"))
-
-(defn specialization-talent-selector [{:keys [key name]}]
-  (let [talent-values @(re-frame/subscribe [:character/talents key])
-        specialization-tree @(re-frame/subscribe [::subs/talent-nodes key])
-        talents @(re-frame/subscribe [:character/specialization-available-talent-nodes key])]
-    (prn "TALENTS" talents)
-    ^{:key key}
-    [:div.mt10.mb10
-     [:div.bold.fs18 name]
-     [:div
-      (if (seq talent-values)
-        [:div
-         (doall
-          (map-indexed
-           (fn [i talent-value]
-             ^{:key i}
-             [:div
-              {:style {:display :flex}}
-              [dropdown-field
-               talents
-               talent-value
-               :key
-               talent-description
-               (partial on-talent-change key i)]
-              [:button
-               {:on-click (partial on-remove-talent key i)}
-               "Remove"]])
-           talent-values))])
-      [:button
-       {:on-click (partial on-add-talent key)}
-       "Add Talent"]]]))
-
-(defn talents-selector []
-  (let [specializations @(re-frame/subscribe [:character/all-specialization-details])]
-    [:div
-     [:div.bold.fs20.blue "Talent Trees"]
-     (doall
-      (map
-       specialization-talent-selector
-       (remove
-        #(nil? %)
-        specializations)))]))
-
-(defn on-name-change [e]
-  (re-frame/dispatch [::events/set-name (.. e -target -value)]))
-
-(defn on-species-change [e]
-  (re-frame/dispatch [::events/set-species (keyword (.. e -target -value))]))
-
-(defn species-dropdown []
-  (let [species @(re-frame/subscribe [::subs/species])
-        species-value @(re-frame/subscribe [:character/species])]
-    [labeled-dropdown-field
-     "Species"
-     species
-     species-value
-     :key
-     :name
-     on-species-change]))
-
-(defn on-career-change [e]
-  (re-frame/dispatch [::events/set-career (keyword (.. e -target -value))]))
-
-(defn careers-dropdown []
-  (let [careers @(re-frame/subscribe [::subs/careers])
-        career-value @(re-frame/subscribe [:character/career])]
-    [labeled-dropdown-field
-     "Career"
-     careers
-     career-value
-     :key
-     :name
-     on-career-change]))
-
-(defn on-specialization-change [e]
-  (re-frame/dispatch [::events/set-specialization (keyword (.. e -target -value))]))
-
-(defn on-add-additional-specialization [_]
-  (re-frame/dispatch [::events/add-additional-specialization]))
-
-(defn on-additional-specialization-change [i e]
-  (re-frame/dispatch [::events/set-additional-specialization i (keyword (.. e -target -value))]))
-
-(defn on-remove-additional-specialization [i _]
-  (re-frame/dispatch [::events/remove-additional-specialization i]))
-
-(defn additional-specializations-selector []
-  (let [specializations @(re-frame/subscribe [::subs/all-specializations])
-        specialization-values @(re-frame/subscribe [:character/additional-specializations])]
-    [:div
-     [:div "Additional Specializations"]
-     (if (seq specialization-values)
-       [:div
-        (doall
-         (map-indexed
-          (fn [i specialization-value]
-            ^{:key i}
-            [:div
-             {:style {:display :flex}}
-             [dropdown-field
-              specializations
-              specialization-value
-              :key
-              :name
-              (partial on-additional-specialization-change i)]
-             [:button
-              {:on-click (partial on-remove-additional-specialization i)}
-              "Remove"]])
-          specialization-values))])
-     [:button
-      {:on-click on-add-additional-specialization}
-      "Add Specialization"]]))
-
-(defn specializations-dropdown []
-  (let [specializations @(re-frame/subscribe [::subs/specializations])
-        specialization-value @(re-frame/subscribe [:character/specialization])]
-    [labeled-dropdown-field
-     "Starting Specialization"
-     specializations
-     specialization-value
-     :key
-     :name
-     on-specialization-change]))
-
 (defn characteristics-panel []
-  (let [characteristics @(re-frame/subscribe [::subs/characteristics])
-        characteristic-values @(re-frame/subscribe [::subs/characteristic-values])]
-    [:div.characteristics-panel
-     [:div.characteristics-panel-title
+  (let [characteristics @(subscribe [::subs/characteristics])
+        characteristic-values @(subscribe [::subs/characteristic-values])]
+    [:div.subpanel
+     [:div.subpanel-header
       "Characteristics"]
-     [:div.characteristics-panel-body
+     [:div.characteristics-panel-body.p5
       (doall
        (map-indexed
         (fn [i chars]
@@ -241,32 +111,16 @@
              chars))])
         (partition 3 characteristics)))]]))
 
-(defn character-sheet-base-attributes []
-  [:div.character-sheet-base-attributes.bold
-   [:div.mb10
-    [labeled-text-field
-     "Character Name"
-     @(re-frame/subscribe [:character/name])
-     on-name-change]]
-   [:div.mb10
-    [species-dropdown]]
-   [:div.mb10
-    [careers-dropdown]]
-   [:div.mb10
-    [specializations-dropdown]]
-   [:div.mb10
-    [additional-specializations-selector]]])
-
 (defn soak-value-panel []
   (let [soak-value @(subscribe [:character/soak-value])]
-    [:div.soak-value-panel.bold.fs30
+    [:div.soak-value-panel.bold.fs30.flex.jcsa
      soak-value]))
 
 (defn wounds-panel []
   [:div.wounds-panel
    [:div.wounds-panel-column
     [:div.wounds-panel-column-content
-     [:div.wound-threshold @(re-frame/subscribe [:character/wound-threshold])]]
+     [:div.wound-threshold @(subscribe [:character/wound-threshold])]]
     [:div.wounds-panel-column-title
      "Threshold"]]
    [:div.wounds-panel-column.wounds-panel-column-right
@@ -279,7 +133,7 @@
   [:div.wounds-panel
    [:div.wounds-panel-column
     [:div.wounds-panel-column-content
-     [:div.wound-threshold @(re-frame/subscribe [:character/strain-threshold])]]
+     [:div.wound-threshold @(subscribe [:character/strain-threshold])]]
     [:div.wounds-panel-column-title
      "Threshold"]]
    [:div.wounds-panel-column.wounds-panel-column-right
@@ -288,11 +142,11 @@
     [:div.wounds-panel-column-title
      "Current"]]])
 
-(def ability-die [:img.ability-die-image.m-l-2 {:src "images/ability-die.svg"}])
+(def ability-die [:img.m-l-2.die-image {:src "images/ability-die.svg"}])
 
-(def proficiency-die [:img.proficiency-die-image.m-l-2 {:src "images/proficiency-die.svg"}])
+(def proficiency-die [:img.m-l-2.die-image {:src "images/proficiency-die.svg"}])
 
-(defn dice-pool-panel [{:keys [ability proficiency]}]
+(defn dice-pool-panel [{:keys [ability proficiency]} & [summary?]]
   [:div
    {:style {:display :flex}}
    [:div
@@ -302,7 +156,11 @@
      (map
       (fn [i]
         ^{:key i}
-        [:span proficiency-die])
+        [:span
+         {:class (if summary?
+                   "skill-proficiency-die-image"
+                   "proficiency-die-image")}
+         proficiency-die])
       (range proficiency)))]
    [:div
     {:style {:display :flex
@@ -311,11 +169,15 @@
      (map
       (fn [i]
         ^{:key i}
-        [:span ability-die])
+        [:span
+         {:class (if summary?
+                   "skill-ability-die-image"
+                   "ability-die-image")}
+         ability-die])
       (range ability)))]])
 
 (defn skill-rank-panel [skill-key]
-  (let [skill-rank @(re-frame/subscribe [:character/skill-rank skill-key])]
+  (let [skill-rank @(subscribe [:character/skill-rank skill-key])]
     [:div.skill-rank
      [:input.skill-rank-input
       {:on-change (fn [e] (re-frame/dispatch [::events/set-skill-rank skill-key (int (.. e -target -value))]))
@@ -329,8 +191,8 @@
    (doall
     (map
      (fn [{:keys [name key characteristic]}]
-       (let [skill-dice @(re-frame/subscribe [:character/skill-dice key])
-             career-skill? @(re-frame/subscribe [:character/career-skill? key])]
+       (let [skill-dice @(subscribe [:character/skill-dice key])
+             career-skill? @(subscribe [:character/career-skill? key])]
          ^{:key key}
          [:div.skill-item
           {:style {:width "100%"
@@ -345,63 +207,282 @@
      items))])
 
 (defn skills-panel []
-  [:div.skills-panel
-   [:div.skills-panel-title
+  [:div.skills-panel.subpanel
+   [:div.subpanel-header
     "Skills"]
-   [skills-subpanel @(re-frame/subscribe [::subs/general-skills])]
+   [skills-subpanel @(subscribe [::subs/general-skills])]
    [:div.skills-subtitle "Combat Skills"]
-   [skills-subpanel @(re-frame/subscribe [::subs/combat-skills])]
+   [skills-subpanel @(subscribe [::subs/combat-skills])]
    [:div.skills-subtitle "Knowledge Skills"]
-   [skills-subpanel @(re-frame/subscribe [::subs/knowledge-skills])]])
+   [skills-subpanel @(subscribe [::subs/knowledge-skills])]])
+
+(defn derived-attributes-panel []
+  [:div.derived-attributes.m-b-10.subpanel
+   [:div.derived-attributes-row
+    [:div.subpanel.derived-attribute
+     [:div.subpanel-header.derived-attribute-header
+      "Soak Value"]
+     [:div.derived-attribute-content
+      [soak-value-panel]]]
+    [:div.subpanel.derived-attribute
+     [:div.subpanel-header.derived-attribute-header
+      "Wounds"]
+     [:div.derived-attribute-content
+      [wounds-panel]]]]
+   [:div.derived-attributes-row
+    [:div.subpanel.derived-attribute
+     [:div.subpanel-header.derived-attribute-header
+      "Strain"]
+     [:div.derived-attribute-content
+      [strain-panel]]]
+    [:div.subpanel.derived-attribute
+     [:div.subpanel-header.derived-attribute-header
+      "Critical Injuries"]]]])
+
+(defn experience-points-total-panel []
+  (let [xp-total @(subscribe [:character/experience-points])]
+    [:div.flex.jcsa
+     [:input.h50.fs30.bold.flex-grow-1.w120
+      {:type :number
+       :value xp-total
+       :on-change #(let [val (js/parseInt (event-value %))]
+                     (dispatch [:character/set-experience-points (if (js/isNaN val)
+                                                                   0
+                                                                   val)]))}]]))
+
+(defn experience-points-panel []
+  [:div.subpanel
+   [:div.subpanel-header
+    "Experience Points"]
+   [:div.flex.p5.h100
+    [:div.subpanel.bgray4.b1.flex-grow-1.m5
+     [:div.subpanel-header
+      "Total"]
+     [:div.p5
+      [experience-points-total-panel]]]
+    [:div.subpanel.bgray4.b1.flex-grow-1.m5
+     [:div.subpanel-header
+      "Remaining"]]]])
+
+(defn talent-node [spec-key i j {:keys [key level talent dirs]}]
+  (let [full-talent @(subscribe [::subs/talent talent])
+        has-talent? @(subscribe [:character/has-talent? spec-key key])
+        available? @(subscribe [:character/talent-available? spec-key key])
+        selectable? (or has-talent? available?)]
+    ^{:key j}
+    [:div
+     [:div.flex
+      [:div.talent-tree-node.flex.jcsa.aic
+       {:on-click #(if has-talent?
+                     (dispatch [::events/remove-talent spec-key key])
+                     (if available?
+                       (dispatch [::events/add-talent spec-key key])))
+        :class (cond-> ""
+                 has-talent? (str "talent-tree-node-selected ")
+                 selectable? (str "talent-tree-node-available "))}
+       [:div (:name full-talent)]]
+      (when (< j 3)
+        [:div.w40.flex
+         (when (dirs :right)
+           [:div.talent-edge-right])])]
+     (when (< i 5)
+       [:div.h40
+        (when (dirs :down)
+          [:div.talent-edge-down])])]))
+
+(defn talent-tree-panel [{spec-name :name
+                          spec-key :key
+                          talent-tree :talent-tree}]
+  (let [expanded-tree @(subscribe [::subs/expanded-talent-tree spec-key])
+        available-talent-nodes @(subscribe [:character/specialization-available-talent-nodes
+                                            spec-key])]
+    [:div.mb10
+     [:div.bold.fs24.mt10 spec-name]
+     [:div
+      (doall
+       (map-indexed
+        (fn [i row]
+          ^{:key i}
+          [:div
+           [:div.flex
+            (doall
+             (map-indexed
+              (partial talent-node spec-key i)
+              row))]])
+        expanded-tree))]]))
+
+(defn make-selection-panel [content]
+  [:div.subpanel.bg-gray3.p10.mt20
+   content])
+
+(defn character-talent-tree-panel []
+  (let [specializations @(subscribe [:character/all-specialization-details])]
+    (prn "SPECIALIZATIONS" specializations)
+    (if (seq specializations)
+      [:div
+       (doall
+        (map
+         (fn [specialization]
+           ^{:key (:key specialization)}
+           [talent-tree-panel specialization])
+         specializations))]
+      [make-selection-panel
+       [:div
+        [:span "Please select a starting"]
+        [:span.ml5.link
+         {:on-click #(dispatch [::events/set-character-sheet-tab :specializations])}
+         "specialization"]]])))
+
+(defn bubble-selector-panel [items
+                             selected-item-keys
+                             on-add
+                             on-remove]
+  (prn "ITEMS" items)
+  (prn "SELECTED ITEMS KEYS" selected-item-keys)
+  [:div.flex.flex-wrap
+   (doall
+    (map
+     (fn [{:keys [key name]}]
+       (let [has-item? (selected-item-keys key)]
+         ^{:key key}
+         [:div.tab.bubble-selector-item
+          {:class (when has-item? 
+                    "current-tab")
+           :on-click (fn [_] (if (and has-item?
+                                      on-remove)
+                               (on-remove key)
+                               (on-add key)))}
+          name]))
+     items))])
+
+(defn species-panel []
+  (let [selected-species @(subscribe [:character/species])
+        species-map @(subscribe [::subs/species-map])]
+    [:div.mt20
+     [:div.fs24.flex.bold
+      [:div "Species:"]
+      [:div.ml20.gray5 (get-in species-map [selected-species :name])]]
+     [bubble-selector-panel
+      @(subscribe [::subs/species])
+      (if selected-species
+        #{selected-species}
+        #{})
+      #(dispatch [::events/set-species %])]]))
+
+(defn career-panel []
+  (let [selected-career @(subscribe [:character/career])
+        career-map @(subscribe [::subs/career-map])]
+    [:div.mt20
+     [:div.fs24.flex.bold
+      [:div "Career:"]
+      [:div.ml20.gray5 (get-in career-map [selected-career :name])]]
+     [bubble-selector-panel
+      @(subscribe [::subs/careers])
+      (if selected-career
+        #{selected-career}
+        #{})
+      #(dispatch [::events/set-career %])]]))
+
+(defn specializations-panel []
+  (let [selected-specialization @(subscribe [:character/specialization])
+        specialization-map @(subscribe [::subs/all-specializations-map])
+        all-specializations @(subscribe [::subs/all-specializations-sorted])
+        career-specializations @(subscribe [::subs/specializations])
+        additional-specializations @(subscribe [::subs/additional-specializations])
+        selected-additional-specializations @(subscribe [:character/additional-specializations])]
+    (prn "SELECTED ADDITIONAL" selected-additional-specializations)
+    (prn "ALL SPECS" additional-specializations)
+    [:div.mt20
+     [:div.fs24.flex.bold
+      [:div "Starting Specialization:"]
+      [:div.ml20.gray5 (get-in specialization-map [selected-specialization :name])]]
+     (if (seq career-specializations)
+       [bubble-selector-panel
+        career-specializations
+        (if selected-specialization
+          #{selected-specialization}
+          #{})
+        #(dispatch [::events/set-specialization %])]
+       [make-selection-panel "Please select a career"])
+     [:div.fs24.flex.bold.mt20
+      [:div "Additional Specializations:"]]
+     [bubble-selector-panel
+      additional-specializations
+      (set selected-additional-specializations)
+      #(dispatch [::events/add-additional-specialization %])
+      #(dispatch [::events/remove-additional-specialization %])]]))
+
+(defn experience-panel []
+  [:div.flex.p5
+   [:div.subpanel.flex-grow-1.m5
+    [:div.subpanel-header
+     "Total Experience Points"]
+    [:div.p10.flex.flex-column.aic
+     [:div.fs35.bold
+      @(subscribe [:character/experience-points])]
+     [:div.flex
+      (doall
+       (map
+        (fn [v]
+          ^{:key v}
+          [:div.experience-button
+           {:on-click #(dispatch [:character/offset-experience-points v])}
+           (if (pos? v)
+             (str "+" v)
+             v)])
+        [-25 -10 -5 -1 1 5 10 25]))]]]
+   [:div.subpanel.flex-grow-1.m5
+    [:div.subpanel-header
+     "Current Experience Points"]
+    (let [current @(subscribe [:character/current-experience-points])]
+      [:div.fs35.bold.flex.jcsa.mt10
+       {:class (when (neg? current) :red)}
+       current])]])
+
+(def character-sheet-tabs
+  {:species {:title "Species"
+             :view species-panel}
+   :career {:title "Career"
+            :view career-panel}
+   :specializations {:title "Specializations"
+                     :view specializations-panel}
+   :talent-tree {:title "Talent Trees"
+                 :view character-talent-tree-panel}
+   :skills {:title "Skills"
+            :view skills-panel}
+   :experience {:title "Experience"
+                :view experience-panel}})
 
 (defn character-sheet-panel []
-  (prn "CHARACTER" @(re-frame/subscribe [:character/character]))
-  (prn "TALENT TREE MAP" @(re-frame/subscribe [:character/talent-tree-map]))
-  (prn "HIGHER LEVEL TALENT NODES" @(re-frame/subscribe [:character/higher-level-talent-nodes]))
-  (prn "AVAILABLE TALENT NODES" @(re-frame/subscribe [:character/available-talent-nodes]))
-  (let [username @(subscribe [::subs/username])]
-    [:div.page
-     [:div.flex.jcsb.aic
-      [:h1.page-header.fs39 "Character Sheet"]
-      [:button.header-button
-       {:on-click #(if (nil? username)
-                     (dispatch [::events/login]))}
-       (if username
-         "Save"
-         "Login To Save")]]
-     [:div.character-sheet 
-      [:div.character-sheet-column
-       [character-sheet-base-attributes]
-       [:div.m-b-10
-        [characteristics-panel]]
-       [skills-panel]]
-      [:div.character-sheet-column
-       [:div.derived-attributes.m-b-10
-        [:div.derived-attributes-row
-         [:div.derived-attribute
-          [:div.derived-attribute-inner
-           [:div.derived-attribute-title
-            "Soak Value"]
-           [:div.derived-attribute-content
-            [soak-value-panel]]]]
-         [:div.derived-attribute
-          [:div.derived-attribute-inner
-           [:div.derived-attribute-title
-            "Wounds"]
-           [:div.derived-attribute-content
-            [wounds-panel]]]]]
-        [:div.derived-attributes-row
-         [:div.derived-attribute
-          [:div.derived-attribute-inner
-           [:div.derived-attribute-title
-            "Strain"]
-           [:div.derived-attribute-content
-            [strain-panel]]]]
-         [:div.derived-attribute
-          [:div.derived-attribute-inner
-           [:div.derived-attribute-title
-            "Critical Injuries"]]]]]
-       [talents-selector]]]]))
+  (prn "CHARACTER" @(subscribe [:character/character]))
+  (let [username @(subscribe [::subs/username])
+        current-tab @(subscribe [::subs/character-sheet-tab])
+        tab-view (-> character-sheet-tabs current-tab :view)]
+    [:div.flex
+     [:div.flex-grow-1]
+     [:div.page
+      [:div.flex.jcsb.aic
+       [:h1.page-header.fs39 "Character Sheet"]
+       [:button.header-button
+        {:on-click #(if (nil? username)
+                      (dispatch [::events/login]))}
+        (if username
+          "Save"
+          "Login To Save")]]
+      [:div.flex
+       [:div
+        [:div.character-sheet-tabs.flex
+         (doall
+          (map
+           (fn [[k {:keys [title]}]]
+             ^{:key k}
+             [:div.tab.pl10.pr10.pt5.pb5.m5
+              {:on-click #(dispatch [::events/set-character-sheet-tab k])
+               :class (when (= k current-tab)
+                        "current-tab")}
+              title])
+           character-sheet-tabs))]
+        [tab-view]]]]]))
 
 ;; main
 
@@ -413,12 +494,84 @@
 (defn show-panel [panel-name]
   [panels panel-name])
 
-(defn main-panel []
-  #_(let [active-panel (re-frame/subscribe [::subs/active-panel])]
-    [:div
-     [header-panel]
-     [show-panel @active-panel]])
+(defn skills-summary-section [title skills]
   [:div
-   [header-panel]
-   [:div.flex.jcsa
-    [character-sheet-panel]]])
+   [:div.mt5
+    [:span.bold title]
+    [:span.ml5
+     (doall
+      (map
+       (fn [{:keys [key name]}]
+         (let [skill-dice @(subscribe [:character/skill-dice key])
+               career-skill? @(subscribe [:character/career-skill? key])]
+           ^{:key key}
+           [:div.flex.jcsb
+            [:div.mr5 name]
+            [dice-pool-panel skill-dice true]]))
+       skills))]]])
+
+(defn skills-summary []
+  [:div.flex
+   [:div.flex-grow-1
+    [skills-summary-section "General Skills" @(subscribe [::subs/general-skills])]]
+   [:div.flex-grow-1.ml20
+    [skills-summary-section "Combat Skills" @(subscribe [::subs/combat-skills])]
+    [skills-summary-section "Knowledge Skills" @(subscribe [::subs/knowledge-skills])]]])
+
+(defn character-name-summary []
+  [:div
+   [:span.bold "Character Name"]
+   [:span @(subscribe [:character/name])]])
+
+(defn species-summary []
+  [:div
+   [:span.bold "Species"]
+   [:span.ml5 @(subscribe [:character/species-name])]])
+
+(defn career-summary []
+  [:div
+   [:span.bold "Career"]
+   [:span.ml5 @(subscribe [:character/career-name])]])
+
+(defn specializations-summary []
+  [:div
+   [:span.bold "Specializations"]
+   [:span.ml5 (s/join ", " @(subscribe [:character/specialization-names]))]])
+
+(defn characteristics-summary []
+  [:div
+   [:span.bold "Characteristics"]
+   [:span.ml8
+    (map
+     (fn [{:keys [abbr value]}]
+       ^{:key abbr}
+       [:span.mr5
+        [:span.italic abbr]
+        [:span.ml2.bold value]])
+     @(subscribe [:character/characteristics]))]])
+
+(defn character-details-panel []
+  [:div.character-details-panel
+   [:div.subpanel.w300
+    [:div.subpanel-header.fs14 "Details"]
+    [:div.p10
+     [:div.fs11
+      [character-name-summary]
+      [species-summary]
+      [career-summary]
+      [specializations-summary]
+      [characteristics-summary]
+      [skills-summary]]]]])
+
+(defn main-panel []
+  #_(let [active-panel (subscribe [::subs/active-panel])]
+      [:div
+       [header-panel]
+       [show-panel @active-panel]])
+  [:div.page-grid
+   [:div.page-header
+    [header-panel]]
+   [:div.main-content
+    [character-sheet-panel]]
+   [:div.right-panel
+    [character-details-panel]]])
