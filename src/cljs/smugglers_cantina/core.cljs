@@ -15,7 +15,9 @@
     (println "dev mode")))
 
 (defn ^:dev/after-load mount-root []
+  (prn "MOUNT ROOT")
   (re-frame/clear-subscription-cache!)
+  (prn "CLEARED")
   (reagent/render [views/main-panel]
                   (.getElementById js/document "app")))
 

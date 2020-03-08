@@ -280,7 +280,7 @@ body {
   box-shadow: 2px 2px 2px rgba(0,0,0,0.3);
 }
 
-.tab {
+.sc-tab {
   border: 2px solid rgba(0,0,0,0.0);
   text-transform: lowercase;
   cursor: pointer;
@@ -293,7 +293,7 @@ body {
   opacity: 0.5;
 }
 
-.tab.current-tab {
+.sc-tab.sc-current-tab {
   opacity: 1.0;
   border: 2px solid rgba(0,0,0,0.3);
 }
@@ -325,7 +325,7 @@ body {
 
 .talent-edge-down {
   border-right: 5px solid rgba(0,0,0,0.6);
-  width: 80px;
+  width: 70px;
   height: 100%;
 }
 

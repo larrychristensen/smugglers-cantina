@@ -15,7 +15,7 @@
      EventType/NAVIGATE
      (fn [event]
        (secretary/dispatch! (.-token event))))
-    (.setEnabled true)))
+    (.setEnabled false)))
 
 (defn app-routes []
   (secretary/set-config! :prefix "#")
@@ -28,6 +28,9 @@
   (defroute "/about" []
     (re-frame/dispatch [::events/set-active-panel :about-panel]))
 
+  #_(defroute "/access_token=(.*)" [token]
+    (prn "ACCESS TOKEN"))
+  
 
   ;; --------------------
   (hook-browser-navigation!))

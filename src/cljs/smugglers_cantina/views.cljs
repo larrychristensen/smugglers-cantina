@@ -17,8 +17,8 @@
       [:img.header-logo {:src "images/smugglers-cantina-logo.png"}]
       [:img.header-sublogo.m-l-10 {:src "images/star-wars-rpg-logo.png"}]]
      [:div
-      [:span.bold.white username]
-      [:button.header-button.m-l-10
+      [:span.bold.white.mr20 username]
+      [:button.header-button.w90.h40
        {:on-click #(if (nil? username)
                     (dispatch [::events/login])
                     (dispatch [::events/logout]))}
@@ -345,9 +345,9 @@
      (fn [{:keys [key name]}]
        (let [has-item? (selected-item-keys key)]
          ^{:key key}
-         [:div.tab.bubble-selector-item
+         [:div.sc-tab.bubble-selector-item
           {:class (when has-item? 
-                    "current-tab")
+                    "sc-current-tab")
            :on-click (fn [_] (if (and has-item?
                                       on-remove)
                                (on-remove key)
@@ -403,7 +403,12 @@
           #{selected-specialization}
           #{})
         #(dispatch [::events/set-specialization %])]
-       [make-selection-panel "Please select a career"])
+       [make-selection-panel
+        [:div
+         [:span "Please select a"]
+         [:span.ml5.link
+          {:on-click #(dispatch [::events/set-character-sheet-tab :career])}
+          "career"]]])
      [:div.fs24.flex.bold.mt20
       [:div "Additional Specializations:"]]
      [bubble-selector-panel
@@ -463,7 +468,7 @@
      [:div.page
       [:div.flex.jcsb.aic
        [:h1.page-header.fs39 "Character Sheet"]
-       [:button.header-button
+       [:button.header-button.w80.h40
         {:on-click #(if (nil? username)
                       (dispatch [::events/login]))}
         (if username
@@ -476,10 +481,10 @@
           (map
            (fn [[k {:keys [title]}]]
              ^{:key k}
-             [:div.tab.pl10.pr10.pt5.pb5.m5
+             [:div.sc-tab.pl10.pr10.pt5.pb5.m5
               {:on-click #(dispatch [::events/set-character-sheet-tab k])
                :class (when (= k current-tab)
-                        "current-tab")}
+                        "sc-current-tab")}
               title])
            character-sheet-tabs))]
         [tab-view]]]]]))

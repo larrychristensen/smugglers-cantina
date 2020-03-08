@@ -282,7 +282,7 @@
       :font-weight :bold
       :border-radius "3px"
       :box-shadow "2px 2px 2px rgba(0,0,0,0.3)"}]
-    [:.tab
+    [:.sc-tab
      {:background-color blue
       :color :white
       :border-radius "10px"
@@ -294,7 +294,7 @@
       :box-sizing :border-box
       :border "2px solid rgba(0,0,0,0.0)"
       :box-shadow "1px 1px 1px rgba(0,0,0,0.3)"}]
-    [:.tab.current-tab
+    [:.sc-tab.sc-current-tab
      {:opacity 1.0
       :border "2px solid rgba(0,0,0,0.3)"}]
     [:.talent-tree-node
@@ -316,7 +316,7 @@
       :height "50%"}]
     [:.talent-edge-down
      {:border-right "5px solid rgba(0,0,0,0.6)"
-      :width "80px"
+      :width "70px"
       :height "100%"}]
     [:.subpanel
      {:background-color :white
