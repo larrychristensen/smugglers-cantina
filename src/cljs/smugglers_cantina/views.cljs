@@ -312,7 +312,7 @@
         expanded-tree))]]))
 
 (defn make-selection-panel [content]
-  [:div.subpanel.bg-gray3.p10.mt20
+  [:div.subpanel.bg-gray1.p10.mt20
    content])
 
 (defn character-talent-tree-panel []
@@ -444,6 +444,13 @@
        {:class (when (neg? current) :red)}
        current])]])
 
+(defn name-and-description-panel []
+  [:div.p5
+   [:div.bold.fs20 "Character Name"]
+   [:input.text-input
+    {:value @(subscribe [:character/name])
+     :on-change #(dispatch [::events/set-name (event-value %)])}]])
+
 (def character-sheet-tabs
   {:species {:title "Species"
              :view species-panel}
@@ -456,7 +463,9 @@
    :skills {:title "Skills"
             :view skills-panel}
    :experience {:title "Experience"
-                :view experience-panel}})
+                :view experience-panel}
+   :description {:title "Name, etc."
+                 :view name-and-description-panel}})
 
 (defn character-sheet-panel []
   (prn "CHARACTER" @(subscribe [:character/character]))
@@ -470,7 +479,8 @@
        [:h1.page-header.fs39 "Character Sheet"]
        [:button.header-button.w80.h40
         {:on-click #(if (nil? username)
-                      (dispatch [::events/login]))}
+                      (dispatch [::events/login])
+                      (dispatch [:character/save-character]))}
         (if username
           "Save"
           "Login To Save")]]
@@ -526,7 +536,7 @@
 (defn character-name-summary []
   [:div
    [:span.bold "Character Name"]
-   [:span @(subscribe [:character/name])]])
+   [:span.ml5 @(subscribe [:character/name])]])
 
 (defn species-summary []
   [:div
@@ -542,6 +552,11 @@
   [:div
    [:span.bold "Specializations"]
    [:span.ml5 (s/join ", " @(subscribe [:character/specialization-names]))]])
+
+(defn soak-value-summary []
+  [:div
+   [:span.bold "Soak Value"]
+   [:span.ml5 @(subscribe [:character/soak-value])]])
 
 (defn characteristics-summary []
   [:div
@@ -565,6 +580,7 @@
       [species-summary]
       [career-summary]
       [specializations-summary]
+      [soak-value-summary]
       [characteristics-summary]
       [skills-summary]]]]])
 

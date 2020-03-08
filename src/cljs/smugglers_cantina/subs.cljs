@@ -550,7 +550,7 @@
 (reg-sub
  ::character-sheet-tab
  (fn [db _]
-   (get db :character-sheet-tab :talent-tree)))
+   (get db :character-sheet-tab :species)))
 
 (reg-sub
  :character/experience-points

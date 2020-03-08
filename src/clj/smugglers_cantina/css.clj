@@ -375,7 +375,13 @@
       :margin "1px"
       :display :flex
       :align-items :center
-      :justify-content :space-around}]]
+      :justify-content :space-around}]
+
+    [:.text-input
+     {:font-size "20px"
+      :border-radius "10px"
+      :padding "10px"
+      :border "1px solid rgba(0,0,0,0.1)"}]]
    margins
    paddings
    flexbox

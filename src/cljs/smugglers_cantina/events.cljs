@@ -1,6 +1,8 @@
 (ns smugglers-cantina.events
   (:require
    [cljs.reader :refer [read-string]]
+   [ajax.core :as ajax] 
+   [clojure.string :as s]
    [re-frame.core :refer [reg-event-db
                           reg-event-fx
                           reg-fx
@@ -57,21 +59,31 @@
 (reg-cofx
   :auth
   (fn [cofx _]
-    (let [auth-data {"ClientId" "4v2541jq6ghgahplpm6hhu3r4m"
-                     "UserPoolId" "us-east-1_jCpRwHULy"
-                     "RedirectUriSignIn" "http://localhost:8280"
-                     "RedirectUriSignOut" "http://localhost:8280"
+    (let [url js/window.location.href
+          localhost? (s/starts-with? url "http://localhost:8280")
+          auth-data {"ClientId" (if localhost?
+                                  "og8mukp0uqi7vokrfbiks11fj"
+                                  "g084lvq352uvn98r5h53isuh8")
+                     "UserPoolId" "us-east-1_Xncit47rK"
+                     "RedirectUriSignIn" (if localhost?
+                                           "http://localhost:8280"
+                                           "https://smugglers-cantina.com")
+                     "RedirectUriSignOut" (if localhost?
+                                           "http://localhost:8280"
+                                           "https://smugglers-cantina.com")
                      "AppWebDomain" "auth.smugglers-cantina.com"
-                     "TokenScopesArray" ["email"]}
+                     "TokenScopesArray" ["openid" "email"]}
 
           auth (CognitoAuth. (clj->js auth-data))]
+      #_(.useCodeGrantFlow auth)
       (set! (. auth -userhandler)
             (set! (. auth -userhandler)
                   (clj->js {"onSuccess" (fn [result]
                                           (dispatch [::login-success auth result]))
                             "onFailure" (fn [result]
                                           (dispatch [::login-failure result]))})))
-      (assoc cofx :auth auth))))
+      (assoc cofx :auth auth)
+      #_(.parseCognitoWebResponse auth js/window.location.href))))
 
 (reg-cofx
  :load-auth
@@ -240,8 +252,13 @@
 (reg-event-fx
  ::login-success
  (fn [db [_ auth result]]
+   (js/console.log "RESULT" result)
    (let [access-token (.-accessToken result)
-         jwt-token (.getJwtToken access-token)
+         _ (js/console.log access-token)
+         id-token (.-idToken result)
+         _ (js/console.log "ID TOKEN" id-token)
+         jwt-token (.getJwtToken id-token)
+         _ (prn "JWT TOKEN" jwt-token)
          username (.getUsername access-token)]
      {:dispatch-n [[::set-username username]
                    [::set-jwt-token jwt-token]]})))
@@ -275,3 +292,28 @@
  [local-save-character]
  (fn [db [_ v]]
    (update-in db [:character :experience-points] (fn [xps] (+ (or xps 0) v)))))
+
+(reg-event-db
+ :character/save-success
+ (fn [db [_ arg]]
+   (prn "SUCCESS" arg)
+   db))
+
+(reg-event-db
+ :character/save-failure
+ (fn [db [_ arg]]
+   (prn "FAILED" arg)
+   db))
+
+(reg-event-fx
+ :character/save-character
+ (fn [{:keys [db]}]
+   {:http-xhrio {:method :put
+                 :uri "https://r2ua989g93.execute-api.us-east-1.amazonaws.com/v1/characters"
+                 :headers {"Authorization" (str "Bearer " (get db :jwt-token))
+                           "Content-Type" "application/json"}
+                 :body (get db :character)
+                 :format (ajax/json-request-format)
+                 :response-format (ajax/json-response-format {:keywords? true})
+                 :on-success [:character/save-success]
+                 :on-failure [:character/save-failure]}}))
