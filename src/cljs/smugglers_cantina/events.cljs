@@ -13,7 +13,8 @@
    [day8.re-frame.http-fx]
    [smugglers-cantina.db :as db]
    [day8.re-frame.tracing :refer-macros [fn-traced]]
-   ["amazon-cognito-auth-js" :refer (CognitoAuth)]))
+   ["amazon-cognito-auth-js" :refer (CognitoAuth)]
+   ["aws-sdk" :as aws]))
 
 (def local-save-character
   (->interceptor
@@ -308,12 +309,47 @@
 (reg-event-fx
  :character/save-character
  (fn [{:keys [db]}]
-   {:http-xhrio {:method :put
+   (let [character (get db :character)
+         id (or (:id character) (str (random-uuid)))
+         user-id (get db :username)]
+     {:http-xhrio {:method :put
+                   :uri "https://r2ua989g93.execute-api.us-east-1.amazonaws.com/v1/characters"
+                   :headers {"Authorization" (str "Bearer " (get db :jwt-token))
+                             "Content-Type" "application/json"}
+                   :body (js/JSON.stringify (clj->js (assoc character
+                                                            :id id
+                                                            :user-id user-id)))
+                   :format (ajax/json-request-format)
+                   :response-format (ajax/json-response-format {:keywords? true})
+                   :on-success [:character/save-success]
+                   :on-failure [:character/save-failure]}})))
+
+(reg-event-db
+ :character/get-characters-success
+ (fn [db [_ resp]]
+   (prn "RESP" resp)
+   (js/console.log (clj->js resp))
+   (prn "SUCCESS" (mapv
+                   (fn [v]
+                     (js->clj
+                      (aws/DynamoDB.Converter.unmarshall (clj->js v))
+                      :keywordize-keys true))
+                   resp))
+   db))
+
+(reg-event-db
+ :character/get-characters-failure
+ (fn [db [_ resp]]
+   (prn "FAILURE" resp)
+   db))
+
+(reg-event-fx
+ :character/get-characters
+ (fn [{:keys [db]}]
+   {:http-xhrio {:method :get
                  :uri "https://r2ua989g93.execute-api.us-east-1.amazonaws.com/v1/characters"
                  :headers {"Authorization" (str "Bearer " (get db :jwt-token))
                            "Content-Type" "application/json"}
-                 :body (get db :character)
-                 :format (ajax/json-request-format)
-                 :response-format (ajax/json-response-format {:keywords? true})
-                 :on-success [:character/save-success]
-                 :on-failure [:character/save-failure]}}))
+                 :response-format (ajax/json-response-format {:keywords? false})
+                 :on-success [:character/get-characters-success]
+                 :on-failure [:character/get-characters-failure]}}))

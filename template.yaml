@@ -3,37 +3,95 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
   smugglers-cantina
 
-  Sample SAM Template for smugglers-cantina
+  Smuggler Cantina Template
   
-# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
-    Timeout: 3
+    Timeout: 60
 
 Resources:
-  HelloWorldFunction:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
-    Properties:
-      CodeUri: hello-world/
-      Handler: app.lambdaHandler
-      Runtime: nodejs12.x
-      Events:
-        HelloWorld:
-          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
-          Properties:
-            Path: /hello
-            Method: get
 
-Outputs:
-  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
-  # Find out more about other implicit resources you can reference within SAM
-  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
-  HelloWorldApi:
-    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
-  HelloWorldFunction:
-    Description: "Hello World Lambda Function ARN"
-    Value: !GetAtt HelloWorldFunction.Arn
-  HelloWorldFunctionIamRole:
-    Description: "Implicit IAM Role created for Hello World function"
-    Value: !GetAtt HelloWorldFunctionRole.Arn
+  CharacterCreationQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      MaximumMessageSize: 1024
+      VisibilityTimeout: 90
+
+  CharactersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: user-id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+        - AttributeName: user-id
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: characters-by-user
+          KeySchema:
+            - AttributeName: user-id
+              KeyType: HASH
+          Projection:
+            NonKeyAttributes:
+              - name
+              - species
+              - career
+            ProjectionType: INCLUDE
+          ProvisionedThroughput:
+            ReadCapacityUnits: 1
+            WriteCapacityUnits: 1
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
+  
+  CharacterCreationLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      InlineCode: |
+        const AWS = require('aws-sdk');
+        const documentClient = new AWS.DynamoDB.DocumentClient();
+
+        exports.handler = async (event) => {
+          const requestItems = event.Records
+            .map(record => record.body)
+            .map(s => JSON.parse(s))
+            .map(ddb => {
+              return {PutRequest: {Item: ddb}}});
+      
+          console.log("REQUEST ITEMS", requestItems);
+
+          const tableName = process.env.TABLE_NAME;
+          const tableRequest = {};
+          tableRequest[tableName] = requestItems;
+   
+          const request = {
+            RequestItems: tableRequest
+          };
+   
+          await documentClient.batchWrite(request).promise();
+        };
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref CharactersTable
+      Runtime: nodejs12.x
+      Handler: index.handler
+      Policies:
+        - AWSLambdaExecute
+        - Version: '2012-10-17' 
+          Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:BatchWriteItem
+              Resource: !GetAtt CharactersTable.Arn
+      Tracing: Active
+      Events:
+        SQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt CharacterCreationQueue.Arn
+            BatchSize: 10
+            Enabled: true

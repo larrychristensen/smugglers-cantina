@@ -14,12 +14,12 @@
         "r" "right"
         "b" "bottom"
         "t" "top"}))
-    (range 1 50))
+    (range 1 100))
    (mapv
     (fn [i]
       [(keyword (str "." class-prefix i))
        {(keyword prop-prefix) (str i "px")}])
-    (range 1 50))))
+    (range 1 100))))
 
 (def margins
   (box-prop "m" "margin"))
@@ -350,6 +350,11 @@
       :grid-column-end 6
       :grid-row-start 1
       :grid-row-end 1}]
+    [:.left-panel
+     {:grid-column-start 2
+      :grid-column-end 2
+      :grid-row-start 2
+      :grid-row-end 2}]
     [:.main-content
      {:grid-column-start 3
       :grid-column-end 3

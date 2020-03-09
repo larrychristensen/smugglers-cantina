@@ -478,6 +478,9 @@
       [:div.flex.jcsb.aic
        [:h1.page-header.fs39 "Character Sheet"]
        [:button.header-button.w80.h40
+        {:on-click #(dispatch [:character/get-characters])}
+        "Get Characters"]
+       [:button.header-button.w80.h40
         {:on-click #(if (nil? username)
                       (dispatch [::events/login])
                       (dispatch [:character/save-character]))}
@@ -500,14 +503,6 @@
         [tab-view]]]]]))
 
 ;; main
-
-(defn- panels [panel-name]
-  (case panel-name
-    :home-panel [character-sheet-panel]
-    [:div]))
-
-(defn show-panel [panel-name]
-  [panels panel-name])
 
 (defn skills-summary-section [title skills]
   [:div
@@ -584,15 +579,43 @@
       [characteristics-summary]
       [skills-summary]]]]])
 
-(defn main-panel []
-  #_(let [active-panel (subscribe [::subs/active-panel])]
-      [:div
-       [header-panel]
-       [show-panel @active-panel]])
+(defn navigation-panel []
+  [:div.left-panel
+   [:div.subpanel.mt99.mr50
+    [:div.subpanel-header.fs16 "Navigation"]
+    [:div.p10
+     [:div.link "Characters"]]]])
+
+(defn character-panel []
   [:div.page-grid
    [:div.page-header
     [header-panel]]
+   [:div.left-panel
+    [navigation-panel]]
    [:div.main-content
     [character-sheet-panel]]
    [:div.right-panel
     [character-details-panel]]])
+
+(defn characters-panel []
+  [:div.page-grid
+   [:div.page-header
+    [header-panel]]
+   [:div.left-panel
+    [navigation-panel]]
+   [:div.main-content
+    [character-sheet-panel]]
+   [:div.right-panel
+    [character-details-panel]]])
+
+(defn- panels [panel-name]
+  (case panel-name
+    :characters characters-panel
+    [character-panel]))
+
+(defn show-panel [panel-name]
+  [panels panel-name])
+
+(defn main-panel []
+  (let [active-panel (subscribe [::subs/active-panel])]
+    [show-panel active-panel]))
