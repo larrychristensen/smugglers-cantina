@@ -281,7 +281,6 @@
             (.removeItem js/localStorage "jwt-token")
             {:db (dissoc (:db cofx) :username :jwt-token :auth)}))
 
-
 (reg-event-db
  :character/set-experience-points
  [local-save-character]
@@ -300,11 +299,19 @@
    (prn "SUCCESS" arg)
    db))
 
-(reg-event-db
+(reg-event-fx
+ ::handle-auth-failure
+ (fn [_ [_ resp]]
+   (let [status (get resp :status)]
+     (prn "HANDLE AUTH FAILURE" status resp)
+     (cond-> {}
+       (= 401 status) (assoc :dispatch [::logout])))))
+
+(reg-event-fx
  :character/save-failure
- (fn [db [_ arg]]
-   (prn "FAILED" arg)
-   db))
+ (fn [_ [_ resp]]
+   (prn "FAILED" resp)
+   {:dispatch [::handle-auth-failure resp]}))
 
 (reg-event-fx
  :character/save-character
@@ -337,11 +344,11 @@
                    resp))
    db))
 
-(reg-event-db
+(reg-event-fx
  :character/get-characters-failure
- (fn [db [_ resp]]
+ (fn [_ [_ resp]]
    (prn "FAILURE" resp)
-   db))
+   {:dispatch [::handle-auth-failure resp]}))
 
 (reg-event-fx
  :character/get-characters

@@ -11,6 +11,60 @@ Globals:
 
 Resources:
 
+  CantinaApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: v1
+      Cors: "'*'"
+      EndpointConfiguration: REGIONAL
+      Auth:
+        DefaultAuthorizer: CantinaAuthorizer
+        Authorizers:
+          CantinaAuthorizer:
+            UserPoolArn: !GetAtt CantinaUserPool.Arn
+
+  CantinaUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      AliasAttributes:
+        - email
+        - preferred_username
+        - phone_number
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+      UsernameConfiguration:
+        CaseSensitive: false
+      Schema:
+        - AttributeDataType: String
+          Name: email
+          Required: true
+  
+  CantinaUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref CantinaUserPool
+      GenerateSecret: false
+      PreventUserExistenceErrors: ENABLED
+      AllowedOAuthFlowsUserPoolClient: true
+      CallbackURLs:
+        - "http://localhost:8280"
+        - "https://smugglers-cantina.com"
+      LogoutURLs:
+        - "http://localhost:8280"
+        - "https://smugglers-cantina.com"
+      SupportedIdentityProviders:
+        - COGNITO
+      AllowedOAuthFlows:
+        - code
+        - implicit
+      AllowedOAuthScopes:
+        - phone
+        - email
+        - openid
+        - profile
+        - aws.cognito.signin.user.admin
+
   CharacterCreationQueue:
     Type: AWS::SQS::Queue
     Properties:
@@ -47,6 +101,47 @@ Resources:
       ProvisionedThroughput:
         ReadCapacityUnits: 1
         WriteCapacityUnits: 1
+
+  EnqueueCharacterFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs12.x
+      InlineCode: |
+        const AWS = require('aws-sdk');
+
+        const sqs = new AWS.SQS();
+
+        exports.handler = async (event) => {
+          console.log("EVENT", event);
+
+          const queueUrl = process.env.QUEUE_URL;
+
+          const params = {
+             MessageBody: event.body,
+             QueueUrl: queueUrl
+          };
+   
+          return await sqs.sendMessag(params).promise();
+        };      
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref CharacterCreationQueue
+      Policies:
+        - AWSLambdaExecute
+        - Version: '2012-10-17' 
+          Statement:
+            - Effect: Allow
+              Action:
+                - sqs:SendMessage
+              Resource: !GetAtt CharacterCreationQueue.Arn
+      Events:
+        PutCharacter:
+          Type: Api
+          Properties:
+            RestApiId: !Ref CantinaApi
+            Path: /characters/{id}
+            Method: PUT
   
   CharacterCreationLambda:
     Type: AWS::Serverless::Function
@@ -95,3 +190,81 @@ Resources:
             Queue: !GetAtt CharacterCreationQueue.Arn
             BatchSize: 10
             Enabled: true
+
+  UiBucket:
+    Type: AWS::S3::Bucket
+
+  UiBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref UiBucket
+      PolicyDocument:
+        Statement:
+          Sid: PublicReadGetObject
+          Effect: Allow
+          Principal: "*"
+          Action: s3:GetObject
+          Resource: !Sub "${UiBucket.Arn}/*"
+
+  GetCharactersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs12.x
+      InlineCode: |
+        const AWS = require('aws-sdk');
+        const documentClient = new AWS.DynamoDB.DocumentClient();
+
+        exports.handler = async (event) => {
+          console.log("EVENT", event);
+
+          const tableName = process.env.TABLE_NAME;
+
+          const params = {
+             TableName: tableName,
+             IndexName: 'characters-by-user',
+             KeyConditions: {
+                'user-id': {
+                   AttributeValueList: [{S: 'lando'}],
+                   ComparisonOperator: "EQ"
+                }
+             }
+          };
+   
+          return await documentClient.query(params).promise();
+        };      
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref CharactersTable
+      Policies:
+        - AWSLambdaExecute
+        - Version: '2012-10-17' 
+          Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:Query
+              Resource: !GetAtt CharactersTable.Arn
+      Events:
+        GetCharacters:
+          Type: Api
+          Properties:
+            RestApiId: !Ref CantinaApi
+            Path: /characters
+            Method: GET
+
+Outputs:
+    Region:
+      Description: "Region"
+      Value: !Ref AWS::Region
+
+    ApiId:
+      Description: "API ID"
+      Value: !Ref CantinaApi
+
+    ApiUrl:
+      Description: "API endpoint URL for Prod environment"
+      Value: !Sub 'https://${CantinaApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/'
+
+    CognitoUserPoolId:
+      Description: "Cognito User Pool Id"
+      Value: !Ref CantinaUserPool
