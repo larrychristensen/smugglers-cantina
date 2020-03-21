@@ -5,8 +5,8 @@
                                org.clojure/google-closure-library
                                org.clojure/google-closure-library-third-party]]
                  [thheller/shadow-cljs "2.8.83"]
-                 [reagent "0.9.1"]
-                 [re-frame "0.11.0"]
+                 [reagent "0.10.0"]
+                 [re-frame "0.12.0"]
                  [day8.re-frame/http-fx "v0.2.0"]
                  [secretary "1.2.3"]
                  [garden "1.3.9"]
@@ -52,7 +52,7 @@
   :profiles
   {:dev
    {:dependencies [[binaryage/devtools "1.0.0"]
-                   [day8.re-frame/re-frame-10x "0.5.1"]
+                   [day8.re-frame/re-frame-10x "0.6.0"]
                    [day8.re-frame/tracing "0.5.3"]]
     :source-paths ["dev"]}
 

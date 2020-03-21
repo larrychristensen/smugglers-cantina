@@ -16,6 +16,9 @@
    ["amazon-cognito-auth-js" :refer (CognitoAuth)]
    ["aws-sdk" :as aws]))
 
+(def base-url "https://hbupmzfv6d.execute-api.us-east-1.amazonaws.com/v1")
+
+
 (def local-save-character
   (->interceptor
    :id :local-save-character
@@ -63,17 +66,18 @@
     (let [url js/window.location.href
           localhost? (s/starts-with? url "http://localhost:8280")
           auth-data {"ClientId" (if localhost?
-                                  "og8mukp0uqi7vokrfbiks11fj"
-                                  "g084lvq352uvn98r5h53isuh8")
-                     "UserPoolId" "us-east-1_Xncit47rK"
+                                  "c348cp5pgp3ondmamsd5qe2ur"
+                                  "c348cp5pgp3ondmamsd5qe2ur")
+                     "UserPoolId" "us-east-1_LUG4TmF4W"
                      "RedirectUriSignIn" (if localhost?
                                            "http://localhost:8280"
                                            "https://smugglers-cantina.com")
                      "RedirectUriSignOut" (if localhost?
                                            "http://localhost:8280"
                                            "https://smugglers-cantina.com")
-                     "AppWebDomain" "auth.smugglers-cantina.com"
+                     "AppWebDomain" "smugglers-cantina.auth.us-east-1.amazoncognito.com"
                      "TokenScopesArray" ["openid" "email"]}
+          
 
           auth (CognitoAuth. (clj->js auth-data))]
       #_(.useCodeGrantFlow auth)
@@ -304,7 +308,7 @@
  (fn [_ [_ resp]]
    (let [status (get resp :status)]
      (prn "HANDLE AUTH FAILURE" status resp)
-     (cond-> {}
+     #_(cond-> {}
        (= 401 status) (assoc :dispatch [::logout])))))
 
 (reg-event-fx
@@ -320,16 +324,18 @@
          id (or (:id character) (str (random-uuid)))
          user-id (get db :username)]
      {:http-xhrio {:method :put
-                   :uri "https://r2ua989g93.execute-api.us-east-1.amazonaws.com/v1/characters"
+                   :uri (str base-url "/characters/" id)
                    :headers {"Authorization" (str "Bearer " (get db :jwt-token))
                              "Content-Type" "application/json"}
+                   :with-credentials true
                    :body (js/JSON.stringify (clj->js (assoc character
                                                             :id id
                                                             :user-id user-id)))
                    :format (ajax/json-request-format)
                    :response-format (ajax/json-response-format {:keywords? true})
                    :on-success [:character/save-success]
-                   :on-failure [:character/save-failure]}})))
+                   :on-failure [:character/save-failure]}
+      :db (assoc-in db [:character :id] id)})))
 
 (reg-event-db
  :character/get-characters-success
@@ -354,9 +360,10 @@
  :character/get-characters
  (fn [{:keys [db]}]
    {:http-xhrio {:method :get
-                 :uri "https://r2ua989g93.execute-api.us-east-1.amazonaws.com/v1/characters"
+                 :uri (str base-url "/characters")
                  :headers {"Authorization" (str "Bearer " (get db :jwt-token))
-                           "Content-Type" "application/json"}
+                           "Accept" "application/json"}
+                 :with-credentials true
                  :response-format (ajax/json-response-format {:keywords? false})
                  :on-success [:character/get-characters-success]
                  :on-failure [:character/get-characters-failure]}}))

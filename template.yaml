@@ -15,10 +15,22 @@ Resources:
     Type: AWS::Serverless::Api
     Properties:
       StageName: v1
-      Cors: "'*'"
+      Cors:
+        AllowOrigin: "'http://localhost:8280'"
+        AllowCredentials: True
+        AllowHeaders: "'Authorization,Content-Type'"
       EndpointConfiguration: REGIONAL
+      TracingEnabled: true
+      GatewayResponses:
+        DEFAULT_4xx:
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: "'http://localhost:8280'"
+              Access-Control-Allow-Credentials: True
+              Access-Control-Allow-Headers: "'Authorization'"
       Auth:
         DefaultAuthorizer: CantinaAuthorizer
+        AddDefaultAuthorizerToCorsPreflight: false
         Authorizers:
           CantinaAuthorizer:
             UserPoolArn: !GetAtt CantinaUserPool.Arn
@@ -33,12 +45,43 @@ Resources:
       Policies:
         PasswordPolicy:
           MinimumLength: 8
+      EmailConfiguration:
+        EmailSendingAccount: DEVELOPER
+        From: accounts@smugglers-cantina.awsapps.com
+        ReplyToEmailAddress: accounts@smugglers-cantina.awsapps.com
+        SourceArn: arn:aws:ses:us-east-1:402722394725:identity/accounts@smugglers-cantina.awsapps.com
       UsernameConfiguration:
         CaseSensitive: false
+      AutoVerifiedAttributes:
+        - email
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: true
+          RequireUppercase: true
+          TemporaryPasswordValidityDays: 7
       Schema:
         - AttributeDataType: String
           Name: email
           Required: true
+
+  # AuthRecordSet:
+  #   Type: AWS::Route53::RecordSet
+  #   Properties:
+  #     HostedZoneName: smugglers-cantina.com.
+  #     HostedZoneId: Z104L9KJLVBBPG
+  #     Name: auth.smugglers-cantina.com.
+  #     Type: A
+  #     AliasTarget:
+  #       DNSName: !Ref CantinaUserPoolDomain
+
+  CantinaUserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain: smugglers-cantina
+      UserPoolId: !Ref CantinaUserPool
   
   CantinaUserPoolClient:
     Type: AWS::Cognito::UserPoolClient
@@ -113,20 +156,34 @@ Resources:
         const sqs = new AWS.SQS();
 
         exports.handler = async (event) => {
-          console.log("EVENT", event);
+        console.log("EVENT", event);
+        const username = event.requestContext.authorizer.claims["cognito:username"];
+        console.log("CLAIMS", username);
 
-          const queueUrl = process.env.QUEUE_URL;
+        const queueUrl = process.env.QUEUE_URL;
+        
+        const character = JSON.parse(event.body);
+        character["user-id"] = username;
 
-          const params = {
-             MessageBody: event.body,
-             QueueUrl: queueUrl
+        const characterStr = JSON.stringify(character);
+        const params = {
+          MessageBody: characterStr,
+          QueueUrl: queueUrl
+        };
+
+        await sqs.sendMessage(params).promise();
+        return {
+          statusCode: 201,
+          body: characterStr,
+          headers: {
+              "Access-Control-Allow-Origin": "http://localhost:8280",
+              "Access-Control-Allow-Credentials": "true"
+            }
           };
-   
-          return await sqs.sendMessag(params).promise();
         };      
       Environment:
         Variables:
-          TABLE_NAME: !Ref CharacterCreationQueue
+          QUEUE_URL: !Ref CharacterCreationQueue
       Policies:
         - AWSLambdaExecute
         - Version: '2012-10-17' 
@@ -220,18 +277,30 @@ Resources:
 
           const tableName = process.env.TABLE_NAME;
 
+          console.log("TABLE NAME", tableName);
+
           const params = {
              TableName: tableName,
              IndexName: 'characters-by-user',
              KeyConditions: {
                 'user-id': {
-                   AttributeValueList: [{S: 'lando'}],
+                   AttributeValueList: ['lando'],
                    ComparisonOperator: "EQ"
                 }
              }
           };
    
-          return await documentClient.query(params).promise();
+          let resp = await documentClient.query(params).promise();
+          return {
+            statusCode: 200,
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": "http://localhost:8280",
+              "Access-Control-Allow-Credentials" : "true",
+              "Access-Control-Allow-Headers": "Content-Type"
+            },
+            body: JSON.stringify(resp.Items)
+          };
         };      
       Environment:
         Variables:
@@ -243,14 +312,17 @@ Resources:
             - Effect: Allow
               Action:
                 - dynamodb:Query
-              Resource: !GetAtt CharactersTable.Arn
+              Resource:
+                - !Sub ${CharactersTable.Arn}/index/characters-by-user
       Events:
         GetCharacters:
           Type: Api
           Properties:
             RestApiId: !Ref CantinaApi
             Path: /characters
-            Method: GET
+            Method: get
+            RequestParameters:
+              - method.request.header.Authorization
 
 Outputs:
     Region:

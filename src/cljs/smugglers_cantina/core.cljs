@@ -1,6 +1,7 @@
 (ns smugglers-cantina.core
   (:require
    [reagent.core :as reagent]
+   [reagent.dom :as rdom]
    [re-frame.core :as re-frame]
    [smugglers-cantina.events :as events]
    [smugglers-cantina.routes :as routes]
@@ -18,8 +19,8 @@
   (prn "MOUNT ROOT")
   (re-frame/clear-subscription-cache!)
   (prn "CLEARED")
-  (reagent/render [views/main-panel]
-                  (.getElementById js/document "app")))
+  (rdom/render [views/main-panel]
+               (.getElementById js/document "app")))
 
 (defn init []
   #_(routes/app-routes)

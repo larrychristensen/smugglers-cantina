@@ -610,7 +610,7 @@
 
 (defn- panels [panel-name]
   (case panel-name
-    :characters characters-panel
+    :characters [characters-panel]
     [character-panel]))
 
 (defn show-panel [panel-name]
