@@ -270,3 +270,9 @@ Always inspect the `resources/public/js/compiled` directory prior to deploying t
 `lein` alias in this project after `lein dev` will, at the very least, run `lein clean`, which
 deletes this generated directory. Further, running `lein dev` will generate many, much larger
 development versions of the files in this directory.
+
+## Deploying
+
+sam deploy --stack-name smugglers-cantina-local --capabilities CAPABILITY_IAM --tags "Application=SmugglersCantina"
+mkdir src/cljs/config
+lein run -m dev.env smugglers-cantina-local us-east-1

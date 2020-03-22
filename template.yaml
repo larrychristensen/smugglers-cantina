@@ -352,9 +352,6 @@ Resources:
               - method.request.header.Authorization
 
 Outputs:
-    Region:
-      Description: "Region"
-      Value: !Ref AWS::Region
 
     ApiId:
       Description: "API ID"
@@ -362,8 +359,20 @@ Outputs:
 
     ApiUrl:
       Description: "API endpoint URL for Prod environment"
-      Value: !Sub 'https://${CantinaApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/'
+      Value: !Sub 'https://${CantinaApi}.execute-api.${AWS::Region}.amazonaws.com/v1/'
 
     CognitoUserPoolId:
       Description: "Cognito User Pool Id"
       Value: !Ref CantinaUserPool
+
+    CognitoUserPoolClientId:
+      Description: "Cognito User Pool Client Id"
+      Value: !Ref CantinaUserPoolClient
+
+    CognitoUserPoolDomain:
+      Description: "Cognito User Pool Domain"
+      Value: !Ref CantinaUserPoolDomain
+
+    AppUrl:
+      Description: "The Application URL"
+      Value: !Ref Domain

@@ -12,17 +12,15 @@
                           ->interceptor]]
    [day8.re-frame.http-fx]
    [smugglers-cantina.db :as db]
+   [config.env :as env]
    [day8.re-frame.tracing :refer-macros [fn-traced]]
    ["amazon-cognito-auth-js" :refer (CognitoAuth)]
    ["aws-sdk" :as aws]))
 
-(def api-id "7rd29oaer1")
-(def user-pool-id "us-east-1_3I98cYgB1")
-(def user-pool-client-id "3qr5utdf25h3686jo9a0823s45")
-(def user-pool-app-domain "smugglers-cantina-local")
+
 (def app-url "http://localhost:8280")
 
-(def base-url (str "https://" api-id ".execute-api.us-east-1.amazonaws.com/v1"))
+(def base-url (env/env-map "ApiUrl"))
 
 
 (def local-save-character
@@ -66,11 +64,11 @@
           :local-store
           (js->clj (.getItem js/localStorage local-store-key)))))
 
-(def auth-config {"ClientId" user-pool-client-id
-                  "UserPoolId" user-pool-id
-                  "RedirectUriSignIn" app-url
-                  "RedirectUriSignOut" app-url
-                  "AppWebDomain" (str user-pool-app-domain ".auth.us-east-1.amazoncognito.com")
+(def auth-config {"ClientId" (env/env-map "CognitoUserPoolClientId")
+                  "UserPoolId" (env/env-map "CognitoUserPoolId")
+                  "RedirectUriSignIn" (env/env-map "AppUrl")
+                  "RedirectUriSignOut" (env/env-map "AppUrl")
+                  "AppWebDomain" (str (env/env-map "CognitoUserPoolDomain") ".auth.us-east-1.amazoncognito.com")
                   "TokenScopesArray" ["openid" "email"]})
 
 (reg-cofx
@@ -406,11 +404,11 @@
 (reg-event-fx
  ::go-to-character-list
  (fn [{:keys [db]}]
-    (let [username (:username db)]
-      (if username
-        {:dispatch-n [[:character/get-characters]
-                      [::set-active-panel :characters]]}
-        {:dispatch [::login]}))))
+   (let [username (:username db)]
+     (if username
+       {:dispatch-n [[:character/get-characters]
+                     [::set-active-panel :characters]]}
+       {:dispatch [::login]}))))
 
 (reg-event-fx
  ::go-to-character-builder
