@@ -405,9 +405,12 @@
 
 (reg-event-fx
  ::go-to-character-list
- (fn [_]
-    {:dispatch-n [[:character/get-characters]
-                  [::set-active-panel :characters]]}))
+ (fn [{:keys [db]}]
+    (let [username (:username db)]
+      (if username
+        {:dispatch-n [[:character/get-characters]
+                      [::set-active-panel :characters]]}
+        {:dispatch [::login]}))))
 
 (reg-event-fx
  ::go-to-character-builder

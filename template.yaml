@@ -34,6 +34,12 @@ Resources:
           ResponseParameters:
             Headers:
               Access-Control-Allow-Origin: !Sub "'${Domain}'"
+              Access-Control-Allow-Credentials: "'true'"
+              Access-Control-Allow-Headers: "'Authorization'"
+        DEFAULT_5xx:
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: !Sub "'${Domain}'"
               Access-Control-Allow-Credentials: True
               Access-Control-Allow-Headers: "'Authorization'"
       Auth:
