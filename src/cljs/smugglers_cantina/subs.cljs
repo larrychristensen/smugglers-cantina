@@ -18,6 +18,7 @@
 (reg-sub
  ::active-panel
  (fn [db _]
+   (prn "ACTIVE PANEL" (:active-panel db))
    (:active-panel db)))
 
 (reg-sub
@@ -440,6 +441,23 @@
    (get db :character)))
 
 (reg-sub
+ :characters/characters
+ (fn [db _]
+   (get db :characters)))
+
+(reg-sub
+ :characters/character-map
+ :<- [:characters/characters]
+ (fn [characters _]
+   (into {} (map (juxt :id identity) characters))))
+
+(reg-sub
+ :characters/character
+ :<- [:characters/character-map]
+ (fn [characters [_ id]]
+   (get characters id)))
+
+(reg-sub
  :character/wound-threshold
  :<- [::species-map]
  :<- [:character/species]
@@ -482,6 +500,22 @@
  :<- [:character/skills]
  (fn [skills [_ skill-key]]
    (get skills skill-key 0)))
+
+(reg-sub
+ :character/increase-skill-rank-disabled?
+ :<- [:character/skills]
+ (fn [skills [_ skill-key]]
+   (let [v (get skills skill-key 0)]
+     (or (nil? v)
+         (>= v 6)))))
+
+(reg-sub
+ :character/decrease-skill-rank-disabled?
+ :<- [:character/skills]
+ (fn [skills [_ skill-key]]
+   (let [v (get skills skill-key 0)]
+     (or (nil? v)
+         (<= v 0)))))
 
 (reg-sub
  :character/career-skills-set

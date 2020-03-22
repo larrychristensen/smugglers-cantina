@@ -9,6 +9,14 @@ Globals:
   Function:
     Timeout: 60
 
+Parameters:
+  Domain:
+    Type: String
+    Default: http://localhost:8280
+  AuthDomain:
+    Type: String
+    Default: smugglers-cantina-local
+
 Resources:
 
   CantinaApi:
@@ -16,7 +24,7 @@ Resources:
     Properties:
       StageName: v1
       Cors:
-        AllowOrigin: "'http://localhost:8280'"
+        AllowOrigin: !Sub "'${Domain}'"
         AllowCredentials: True
         AllowHeaders: "'Authorization,Content-Type'"
       EndpointConfiguration: REGIONAL
@@ -25,7 +33,7 @@ Resources:
         DEFAULT_4xx:
           ResponseParameters:
             Headers:
-              Access-Control-Allow-Origin: "'http://localhost:8280'"
+              Access-Control-Allow-Origin: !Sub "'${Domain}'"
               Access-Control-Allow-Credentials: True
               Access-Control-Allow-Headers: "'Authorization'"
       Auth:
@@ -80,7 +88,7 @@ Resources:
   CantinaUserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
     Properties:
-      Domain: smugglers-cantina
+      Domain: !Sub "${AuthDomain}"
       UserPoolId: !Ref CantinaUserPool
   
   CantinaUserPoolClient:
@@ -91,11 +99,9 @@ Resources:
       PreventUserExistenceErrors: ENABLED
       AllowedOAuthFlowsUserPoolClient: true
       CallbackURLs:
-        - "http://localhost:8280"
-        - "https://smugglers-cantina.com"
+        - !Ref Domain
       LogoutURLs:
-        - "http://localhost:8280"
-        - "https://smugglers-cantina.com"
+        - !Ref Domain
       SupportedIdentityProviders:
         - COGNITO
       AllowedOAuthFlows:
@@ -141,6 +147,15 @@ Resources:
           ProvisionedThroughput:
             ReadCapacityUnits: 1
             WriteCapacityUnits: 1
+        - IndexName: full-characters-by-user
+          KeySchema:
+            - AttributeName: user-id
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+          ProvisionedThroughput:
+            ReadCapacityUnits: 1
+            WriteCapacityUnits: 1
       ProvisionedThroughput:
         ReadCapacityUnits: 1
         WriteCapacityUnits: 1
@@ -171,12 +186,14 @@ Resources:
           QueueUrl: queueUrl
         };
 
+        const domain = process.env.DOMAIN;
+
         await sqs.sendMessage(params).promise();
         return {
           statusCode: 201,
           body: characterStr,
           headers: {
-              "Access-Control-Allow-Origin": "http://localhost:8280",
+              "Access-Control-Allow-Origin": domain,
               "Access-Control-Allow-Credentials": "true"
             }
           };
@@ -184,6 +201,7 @@ Resources:
       Environment:
         Variables:
           QUEUE_URL: !Ref CharacterCreationQueue
+          DOMAIN: !Ref Domain
       Policies:
         - AWSLambdaExecute
         - Version: '2012-10-17' 
@@ -279,23 +297,25 @@ Resources:
 
           console.log("TABLE NAME", tableName);
 
+          const username = event.requestContext.authorizer.claims["cognito:username"];
           const params = {
              TableName: tableName,
-             IndexName: 'characters-by-user',
+             IndexName: 'full-characters-by-user',
              KeyConditions: {
                 'user-id': {
-                   AttributeValueList: ['lando'],
+                   AttributeValueList: [username],
                    ComparisonOperator: "EQ"
                 }
              }
           };
    
           let resp = await documentClient.query(params).promise();
+          const domain = process.env.DOMAIN;
           return {
             statusCode: 200,
             headers: {
               "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": "http://localhost:8280",
+              "Access-Control-Allow-Origin": domain,
               "Access-Control-Allow-Credentials" : "true",
               "Access-Control-Allow-Headers": "Content-Type"
             },
@@ -305,6 +325,7 @@ Resources:
       Environment:
         Variables:
           TABLE_NAME: !Ref CharactersTable
+          DOMAIN: !Ref Domain
       Policies:
         - AWSLambdaExecute
         - Version: '2012-10-17' 
@@ -313,7 +334,7 @@ Resources:
               Action:
                 - dynamodb:Query
               Resource:
-                - !Sub ${CharactersTable.Arn}/index/characters-by-user
+                - !Sub ${CharactersTable.Arn}/index/full-characters-by-user
       Events:
         GetCharacters:
           Type: Api

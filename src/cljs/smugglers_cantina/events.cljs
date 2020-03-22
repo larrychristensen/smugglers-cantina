@@ -1,11 +1,11 @@
 (ns smugglers-cantina.events
   (:require
    [cljs.reader :refer [read-string]]
+   [clojure.walk :refer [keywordize-keys]]
    [ajax.core :as ajax] 
    [clojure.string :as s]
    [re-frame.core :refer [reg-event-db
                           reg-event-fx
-                          reg-fx
                           reg-cofx
                           inject-cofx
                           dispatch
@@ -16,7 +16,13 @@
    ["amazon-cognito-auth-js" :refer (CognitoAuth)]
    ["aws-sdk" :as aws]))
 
-(def base-url "https://hbupmzfv6d.execute-api.us-east-1.amazonaws.com/v1")
+(def api-id "7rd29oaer1")
+(def user-pool-id "us-east-1_3I98cYgB1")
+(def user-pool-client-id "3qr5utdf25h3686jo9a0823s45")
+(def user-pool-app-domain "smugglers-cantina-local")
+(def app-url "http://localhost:8280")
+
+(def base-url (str "https://" api-id ".execute-api.us-east-1.amazonaws.com/v1"))
 
 
 (def local-save-character
@@ -60,35 +66,26 @@
           :local-store
           (js->clj (.getItem js/localStorage local-store-key)))))
 
-(reg-cofx
-  :auth
-  (fn [cofx _]
-    (let [url js/window.location.href
-          localhost? (s/starts-with? url "http://localhost:8280")
-          auth-data {"ClientId" (if localhost?
-                                  "c348cp5pgp3ondmamsd5qe2ur"
-                                  "c348cp5pgp3ondmamsd5qe2ur")
-                     "UserPoolId" "us-east-1_LUG4TmF4W"
-                     "RedirectUriSignIn" (if localhost?
-                                           "http://localhost:8280"
-                                           "https://smugglers-cantina.com")
-                     "RedirectUriSignOut" (if localhost?
-                                           "http://localhost:8280"
-                                           "https://smugglers-cantina.com")
-                     "AppWebDomain" "smugglers-cantina.auth.us-east-1.amazoncognito.com"
-                     "TokenScopesArray" ["openid" "email"]}
-          
+(def auth-config {"ClientId" user-pool-client-id
+                  "UserPoolId" user-pool-id
+                  "RedirectUriSignIn" app-url
+                  "RedirectUriSignOut" app-url
+                  "AppWebDomain" (str user-pool-app-domain ".auth.us-east-1.amazoncognito.com")
+                  "TokenScopesArray" ["openid" "email"]})
 
-          auth (CognitoAuth. (clj->js auth-data))]
-      #_(.useCodeGrantFlow auth)
-      (set! (. auth -userhandler)
-            (set! (. auth -userhandler)
-                  (clj->js {"onSuccess" (fn [result]
-                                          (dispatch [::login-success auth result]))
-                            "onFailure" (fn [result]
-                                          (dispatch [::login-failure result]))})))
-      (assoc cofx :auth auth)
-      #_(.parseCognitoWebResponse auth js/window.location.href))))
+(reg-cofx
+ :auth
+ (fn [cofx _]
+   (let [auth (CognitoAuth. (clj->js auth-config))]
+     #_(.useCodeGrantFlow auth)
+     (set! (. auth -userhandler)
+           (set! (. auth -userhandler)
+                 (clj->js {"onSuccess" (fn [result]
+                                         (dispatch [::login-success auth result]))
+                           "onFailure" (fn [result]
+                                         (dispatch [::login-failure result]))})))
+     (assoc cofx :auth auth)
+     #_(.parseCognitoWebResponse auth js/window.location.href))))
 
 (reg-cofx
  :load-auth
@@ -119,7 +116,8 @@
 (reg-event-db
  ::set-active-panel
  (fn-traced [db [_ active-panel]]
-   (assoc db :active-panel active-panel)))
+            (prn "SET ACTIVE PANEL" active-panel)
+            (assoc db :active-panel active-panel)))
 
 (reg-event-db
  ::set-name
@@ -157,6 +155,30 @@
             (assoc-in db
                       [:character :skills skill-key]
                       (max 0 (min skill-value 6)))))
+
+(reg-event-db
+ :character/increase-skill-rank
+ [local-save-character]
+ (fn-traced [db [_ skill-key]]
+            (update-in db
+                       [:character :skills skill-key]
+                       (fn [r]
+                         (let [rank (or r 0)]
+                           (if (< rank 6)
+                             (inc rank)
+                             rank))))))
+
+(reg-event-db
+ :character/decrease-skill-rank
+ [local-save-character]
+ (fn-traced [db [_ skill-key]]
+            (update-in db
+                       [:character :skills skill-key]
+                       (fn [r]
+                         (let [rank (or r 0)]
+                           (if (> rank 0)
+                             (dec rank)
+                             rank))))))
 
 (defn remove-item [v index]
   (vec
@@ -308,7 +330,7 @@
  (fn [_ [_ resp]]
    (let [status (get resp :status)]
      (prn "HANDLE AUTH FAILURE" status resp)
-     #_(cond-> {}
+     (cond-> {}
        (= 401 status) (assoc :dispatch [::logout])))))
 
 (reg-event-fx
@@ -337,18 +359,31 @@
                    :on-failure [:character/save-failure]}
       :db (assoc-in db [:character :id] id)})))
 
+(defn convert-keywords [character]
+  (cond-> character
+    true keywordize-keys
+    (:species character) (update :species keyword)
+    
+    (:career character) (update :career keyword)
+
+    (:specialization character) (update :specialization keyword)
+    
+    (:additional-specializations character)
+    (update :additional-specializations (fn [s] (mapv keyword s)))
+
+    (:talents character)
+    (update :talents (fn [talents]
+                       (into {} (map
+                                 (fn [[k talent-names]]
+                                   [k (set (map keyword talent-names))])
+                                 talents))))))
+
 (reg-event-db
  :character/get-characters-success
  (fn [db [_ resp]]
-   (prn "RESP" resp)
-   (js/console.log (clj->js resp))
-   (prn "SUCCESS" (mapv
-                   (fn [v]
-                     (js->clj
-                      (aws/DynamoDB.Converter.unmarshall (clj->js v))
-                      :keywordize-keys true))
-                   resp))
-   db))
+   (let [characters (keywordize-keys resp)]
+     (prn "SUCCESS" characters)
+     (assoc db :characters (map convert-keywords characters)))))
 
 (reg-event-fx
  :character/get-characters-failure
@@ -367,3 +402,24 @@
                  :response-format (ajax/json-response-format {:keywords? false})
                  :on-success [:character/get-characters-success]
                  :on-failure [:character/get-characters-failure]}}))
+
+(reg-event-fx
+ ::go-to-character-list
+ (fn [_]
+    {:dispatch-n [[:character/get-characters]
+                  [::set-active-panel :characters]]}))
+
+(reg-event-fx
+ ::go-to-character-builder
+ (fn [_]
+    {:dispatch [::set-active-panel :character-builder]}))
+
+(reg-event-db
+ :character/set-character
+ (fn [db [_ character]]
+   (assoc db :character character)))
+
+(reg-event-fx
+ :character/new-character
+ (fn [_ _]
+   {:dispatch [:character/set-character {}]}))

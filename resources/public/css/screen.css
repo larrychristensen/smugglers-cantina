@@ -230,19 +230,30 @@ body {
 .skill-item {
   padding: 5px;
   border-bottom: 1px solid #aaa;
+  display: flex;
+  align-items: center;
 }
 
 .skill-title {
   flex-grow: 1;
+  font-weight: 400;
+  font-size: 20px;
+}
+
+.career-skill {
+  font-weight: 900;
 }
 
 .skill-rank {
-  width: 35px;
+
 }
 
 .skill-rank-input {
   width: 35px;
   height: 30px;
+  border: 2px solid rgba(0,0,0,0.2);
+  border-radius: 5px;
+  padding: 5px;
 }
 
 .skill-dice {
@@ -280,6 +291,11 @@ body {
   box-shadow: 2px 2px 2px rgba(0,0,0,0.3);
 }
 
+.header-button-red {
+  background-color: #BC2C1A;
+  color: white;
+}
+
 .sc-tab {
   border: 2px solid rgba(0,0,0,0.0);
   text-transform: lowercase;
@@ -305,10 +321,11 @@ body {
   border-radius: 10px;
   box-shadow: 1px 1px rgba(0,0,0,0.1);
   box-sizing: border-box;
+  text-align: center;
 }
 
 .talent-tree-node-selected {
-  border: 5px solid #fb3640;
+  border: 5px solid #BC2C1A;
   cursor: pointer;
 }
 
@@ -345,11 +362,21 @@ body {
 }
 
 .bubble-selector-item {
-  background-color: #e8c627;
-  color: black;
-  padding: 5px 10px;
   margin: 5px;
-  border: 2px solid #e8c627;
+  border: 3px solid #e8c627;
+  text-transform: lowercase;
+  padding: 5px 10px;
+  cursor: pointer;
+  box-shadow: 1px 1px 1px rgba(0,0,0,0.3);
+  font-size: 14px;
+  background-color: #e8c627;
+  border-radius: 10px;
+  box-sizing: border-box;
+  color: black;
+}
+
+.bubble-selector-item-selected {
+  border: 3px solid rgba(0,0,0,0.7);
 }
 
 .link {
@@ -406,10 +433,30 @@ body {
   cursor: pointer;
   font-weight: bold;
   box-shadow: 1px 1px 1px rgba(0,0,0,0.2);
-  background-color: #fb3640;
+  background-color: #235789;
   border-radius: 5px;
   display: flex;
   color: white;
+}
+
+.skill-rank-button {
+  width: 24px;
+  justify-content: space-around;
+  height: 24px;
+  margin: 1px;
+  align-items: center;
+  cursor: pointer;
+  font-weight: bold;
+  box-shadow: 1px 1px 1px rgba(0,0,0,0.2);
+  background-color: #235789;
+  border-radius: 5px;
+  display: flex;
+  color: white;
+}
+
+.disabled-button {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .text-input {
@@ -417,6 +464,49 @@ body {
   border-radius: 10px;
   padding: 10px;
   border: 1px solid rgba(0,0,0,0.1);
+}
+
+.navigation-item-selected {
+  background-color: rgba(0,0,0,0.7);
+  color: white;
+  border-radius: 5px;
+}
+
+.list {
+  padding-bottom: 10px;
+  border-bottom-left-radius: 5px;
+  border-bottom-right-radius: 5px;
+  background-color: white;
+}
+
+.list-header {
+  background-color: rgba(0,0,0,0.7);
+  color: white;
+  border-top-left-radius: 5px;
+  border-top-right-radius: 5px;
+}
+
+.character-list-name {
+  width: 250px;
+}
+
+.character-list-species {
+  width: 150px;
+}
+
+.character-list-career {
+  width: 150px;
+}
+
+.list-item {
+  padding: 20px;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(0,0,0,0.2);
+}
+
+.list-item:hover {
+  background-color: rgba(0,0,0,0.1);
 }
 
 .m99 {
@@ -4536,7 +4626,7 @@ body {
 }
 
 .red {
-  color: #fb3640;
+  color: #BC2C1A;
 }
 
 .blue {
@@ -4588,7 +4678,7 @@ body {
 }
 
 .bg-red {
-  background-color: #fb3640;
+  background-color: #BC2C1A;
 }
 
 .bg-blue {

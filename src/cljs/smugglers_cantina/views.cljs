@@ -177,14 +177,26 @@
       (range ability)))]])
 
 (defn skill-rank-panel [skill-key]
-  (let [skill-rank @(subscribe [:character/skill-rank skill-key])]
-    [:div.skill-rank
-     [:input.skill-rank-input
-      {:on-change (fn [e] (re-frame/dispatch [::events/set-skill-rank skill-key (int (.. e -target -value))]))
-       :type :number
-       :min 0
-       :max 6
-       :value skill-rank}]]))
+  (let [skill-rank @(subscribe [:character/skill-rank skill-key])
+        increase-disabled? @(subscribe [:character/increase-skill-rank-disabled? skill-key])
+        decrease-disabled? @(subscribe [:character/decrease-skill-rank-disabled? skill-key])]
+    [:div.skill-rank.bold.fs24.flex.aic
+     [:div.skill-rank-button
+      {:on-click #(dispatch [:character/decrease-skill-rank skill-key])
+       :class (if decrease-disabled? "disabled-button")}
+      "-"]
+     [:div.fs30.ml10.mr10
+      skill-rank]
+     [:div.skill-rank-button
+      {:on-click #(dispatch [:character/increase-skill-rank skill-key])
+       :class (if increase-disabled? "disabled-button")}
+      "+"]
+     #_[:input.skill-rank-input
+        {:on-change (fn [e] (re-frame/dispatch [::events/set-skill-rank skill-key (int (.. e -target -value))]))
+         :type :number
+         :min 0
+         :max 6
+         :value skill-rank}]]))
 
 (defn skills-subpanel [items]
   [:div.skills-items
@@ -195,11 +207,8 @@
              career-skill? @(subscribe [:character/career-skill? key])]
          ^{:key key}
          [:div.skill-item
-          {:style {:width "100%"
-                   :display :flex
-                   :justify-content :space-between}}
           [:div.skill-title
-           {:style {:font-weight (if career-skill? :bold :normal)}}
+           {:class (if career-skill? "career-skill")}
            [:span {:style {:width "100px"}} name]
            [:span.m-l-10 (str "(" (:abbr characteristic) ")")]]
           [skill-rank-panel key]
@@ -283,11 +292,11 @@
        [:div (:name full-talent)]]
       (when (< j 3)
         [:div.w40.flex
-         (when (dirs :right)
+         (when (dirs :r)
            [:div.talent-edge-right])])]
      (when (< i 5)
        [:div.h40
-        (when (dirs :down)
+        (when (dirs :d)
           [:div.talent-edge-down])])]))
 
 (defn talent-tree-panel [{spec-name :name
@@ -345,9 +354,9 @@
      (fn [{:keys [key name]}]
        (let [has-item? (selected-item-keys key)]
          ^{:key key}
-         [:div.sc-tab.bubble-selector-item
+         [:div.bubble-selector-item
           {:class (when has-item? 
-                    "sc-current-tab")
+                    "bubble-selector-item-selected")
            :on-click (fn [_] (if (and has-item?
                                       on-remove)
                                (on-remove key)
@@ -467,6 +476,11 @@
    :description {:title "Name, etc."
                  :view name-and-description-panel}})
 
+(defn new-character-button []
+  [:button.w120.h40.header-button.header-button-red
+   {:on-click #(dispatch [:character/new-character])}
+   "New Character"])
+
 (defn character-sheet-panel []
   (prn "CHARACTER" @(subscribe [:character/character]))
   (let [username @(subscribe [::subs/username])
@@ -476,17 +490,16 @@
      [:div.flex-grow-1]
      [:div.page
       [:div.flex.jcsb.aic
-       [:h1.page-header.fs39 "Character Sheet"]
-       [:button.header-button.w80.h40
-        {:on-click #(dispatch [:character/get-characters])}
-        "Get Characters"]
-       [:button.header-button.w80.h40
-        {:on-click #(if (nil? username)
-                      (dispatch [::events/login])
-                      (dispatch [:character/save-character]))}
-        (if username
-          "Save"
-          "Login To Save")]]
+       [:h1.page-header.fs39 "Character Builder"]
+       [:div.flex
+        [:button.header-button.w80.h40
+         {:on-click #(if (nil? username)
+                       (dispatch [::events/login])
+                       (dispatch [:character/save-character]))}
+         (if username
+           "Save"
+           "Login To Save")]
+        [:div.ml10 [new-character-button]]]]
       [:div.flex
        [:div
         [:div.character-sheet-tabs.flex
@@ -579,12 +592,24 @@
       [characteristics-summary]
       [skills-summary]]]]])
 
+
+
 (defn navigation-panel []
-  [:div.left-panel
-   [:div.subpanel.mt99.mr50
-    [:div.subpanel-header.fs16 "Navigation"]
-    [:div.p10
-     [:div.link "Characters"]]]])
+  (let [active-panel @(subscribe [::subs/active-panel])]
+    [:div.left-panel
+     [:div.subpanel.mt99.mr50
+      [:div.subpanel-header.fs16 "Navigation"]
+      [:div.p10
+       [:div.link.p10
+        {:on-click #(dispatch [::events/set-active-panel :character-builder])
+         :class (if (= active-panel :character-builder)
+                  "navigation-item-selected")}
+        "Character Builder"]
+       [:div.link.p10
+        {:on-click #(dispatch [::events/go-to-character-list])
+         :class (if (= active-panel :characters)
+                  "navigation-item-selected")}
+        "Characters"]]]]))
 
 (defn character-panel []
   [:div.page-grid
@@ -597,6 +622,30 @@
    [:div.right-panel
     [character-details-panel]]])
 
+(defn character-list-panel []
+  (let [characters @(subscribe [:characters/characters])]
+    [:div.page
+     [:div.flex.jcsb.aic
+      [:h1.page-header.fs39 "Character List"]
+      [new-character-button]]
+     [:div.fs20.list.mr40
+      [:div.p20.flex.list-header
+       [:div.character-list-name "Name"]
+       [:div.character-list-species "Species"]
+       [:div.character-list-career "Career"]]
+      (doall
+       (map
+        (fn [{:keys [id name species career] :as character}]
+          (prn "CHARACTER" character)
+          ^{:key id}
+          [:div.flex.pointer.list-item
+           {:on-click #(dispatch [::events/go-to-character-builder])
+            :on-mouse-over #(dispatch [:character/set-character character])}
+           [:div.character-list-name name]
+           [:div.character-list-species species]
+           [:div.character-list-career career]])
+        characters))]]))
+
 (defn characters-panel []
   [:div.page-grid
    [:div.page-header
@@ -604,7 +653,7 @@
    [:div.left-panel
     [navigation-panel]]
    [:div.main-content
-    [character-sheet-panel]]
+    [character-list-panel]]
    [:div.right-panel
     [character-details-panel]]])
 
@@ -617,5 +666,6 @@
   [panels panel-name])
 
 (defn main-panel []
-  (let [active-panel (subscribe [::subs/active-panel])]
+  (let [active-panel @(subscribe [::subs/active-panel])]
+    (prn "ACTIVE PANEL" active-panel)
     [show-panel active-panel]))

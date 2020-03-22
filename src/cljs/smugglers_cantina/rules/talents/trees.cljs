@@ -25,20 +25,12 @@
 (defn talent-node-keyword [talent-key level]
   (keyword (str (name talent-key) "-level-" (inc level))))
 
-(def connection-map
-  {:d [:down]
-   :l [:left]
-   :r [:right]
-   :lr [:left :right]
-   :ld [:left :down]
-   :rd [:right :down]
-   :lrd [:left :right :down]})
-
 (defn get-offsets [dir]
   (case dir
-    :down [1 0]
-    :left [0 -1]
-    :right [0 1]))
+    :u [-1 0]
+    :d [1 0]
+    :l [0 -1]
+    :r [0 1]))
 
 (defn make-edge [talent-tree i j dir]
   (let [[y x] (get-offsets dir)
@@ -51,15 +43,14 @@
   (map-indexed
    (fn [i row]
      (map-indexed
-      (fn [j [talent-key connections-key]]
-        (let [dirs (connection-map connections-key)]
-          {:key (talent-node-keyword talent-key i)
-           :level (inc i)
-           :talent talent-key
-           :dirs (set (connection-map connections-key))
-           :edges (map
-                   (partial make-edge talent-tree i j)
-                   dirs)}))
+      (fn [j [talent-key dirs]]
+        {:key (talent-node-keyword talent-key i)
+         :level (inc i)
+         :talent talent-key
+         :dirs (set dirs)
+         :edges (map
+                 (partial make-edge talent-tree i j)
+                 dirs)})
       row))
    talent-tree))
 

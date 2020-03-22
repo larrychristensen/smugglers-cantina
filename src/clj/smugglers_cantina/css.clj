@@ -73,9 +73,10 @@
       {:font-size (str v "px")}])
    (range 10 40)))
 
-(def red "#fb3640")
+(def red "#BC2C1A")
 (def yellow "#e8c627")
 (def blue "#235789")
+(def green "#286324")
 
 (def grays
   (map
@@ -253,14 +254,23 @@
      {:padding "10px"}]
     [:.skill-item
      {:padding "5px"
-      :border-bottom "1px solid #aaa"}]
+      :border-bottom "1px solid #aaa"
+      :display :flex
+      :align-items :center}]
     [:.skill-title
-     {:flex-grow 1}]
+     {:flex-grow 1
+      :font-weight 400
+      :font-size "20px"}]
+    [:.career-skill
+     {:font-weight 900}]
     [:.skill-rank
-     {:width "35px"}]
+     {}]
     [:.skill-rank-input
      {:width "35px"
-      :height "30px"}]
+      :height "30px"
+      :border "2px solid rgba(0,0,0,0.2)"
+      :border-radius "5px"
+      :padding "5px"}]
     [:.skill-dice
      {:width "135px"
       :display :flex
@@ -282,6 +292,9 @@
       :font-weight :bold
       :border-radius "3px"
       :box-shadow "2px 2px 2px rgba(0,0,0,0.3)"}]
+    [:.header-button-red
+     {:background-color red
+      :color :white}]
     [:.sc-tab
      {:background-color blue
       :color :white
@@ -303,7 +316,8 @@
       :min-height "100px"
       :border-radius "10px"
       :box-shadow "1px 1px rgba(0,0,0,0.1)"
-      :box-sizing :border-box}]
+      :box-sizing :border-box
+      :text-align :center}]
     [:.talent-tree-node-selected
      {:border (str "5px solid " red)
       :cursor :pointer}]
@@ -334,7 +348,15 @@
       :color :black
       :padding "5px 10px"
       :margin "5px"
-      :border (str "2px solid " yellow)}]
+      :border (str "3px solid " yellow)
+      :border-radius "10px"
+      :font-size "14px"
+      :text-transform :lowercase
+      :cursor :pointer
+      :box-sizing :border-box
+      :box-shadow "1px 1px 1px rgba(0,0,0,0.3)"}]
+    [:.bubble-selector-item-selected
+     {:border "3px solid rgba(0,0,0,0.7)"}]
     [:.link
      {:text-decoration :underline
       :cursor :pointer
@@ -369,7 +391,7 @@
      {:margin-top "100px"
       :margin-left "20px"}]
     [:.experience-button
-     {:background-color red
+     {:background-color blue
       :cursor :pointer
       :font-weight :bold
       :color :white
@@ -382,11 +404,58 @@
       :align-items :center
       :justify-content :space-around}]
 
+    [:.skill-rank-button
+     {:background-color blue
+      :cursor :pointer
+      :font-weight :bold
+      :color :white
+      :box-shadow "1px 1px 1px rgba(0,0,0,0.2)"
+      :border-radius "5px"
+      :height "24px"
+      :width "24px"
+      :margin "1px"
+      :display :flex
+      :align-items :center
+      :justify-content :space-around}]
+    
+    [:.disabled-button
+     {:opacity 0.5
+      :cursor :not-allowed}]
+
     [:.text-input
      {:font-size "20px"
       :border-radius "10px"
       :padding "10px"
-      :border "1px solid rgba(0,0,0,0.1)"}]]
+      :border "1px solid rgba(0,0,0,0.1)"}]
+
+    [:.navigation-item-selected
+     {:background-color "rgba(0,0,0,0.7)"
+      :color :white
+      :border-radius "5px"}]
+
+    [:.list
+     {:padding-bottom "10px"
+      :border-bottom-left-radius "5px"
+      :border-bottom-right-radius "5px"
+      :background-color :white}]
+    [:.list-header
+     {:background-color "rgba(0,0,0,0.7)"
+      :color :white
+      :border-top-left-radius "5px"
+      :border-top-right-radius "5px"}]
+    [:.character-list-name
+     {:width "250px"}]
+    [:.character-list-species
+     {:width "150px"}]
+    [:.character-list-career
+     {:width "150px"}]
+    [:.list-item
+     {:padding "20px"
+      :font-weight 500
+      :cursor :pointer
+      :border-bottom "1px solid rgba(0,0,0,0.2)"}]
+    [:.list-item:hover
+     {:background-color "rgba(0,0,0,0.1)"}]]
    margins
    paddings
    flexbox
