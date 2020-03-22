@@ -642,8 +642,8 @@
            {:on-click #(dispatch [::events/go-to-character-builder])
             :on-mouse-over #(dispatch [:character/set-character character])}
            [:div.character-list-name name]
-           [:div.character-list-species species]
-           [:div.character-list-career career]])
+           [:div.character-list-species @(subscribe [::subs/species-name species])]
+           [:div.character-list-career @(subscribe [::subs/career-name career])]])
         characters))]]))
 
 (defn characters-panel []

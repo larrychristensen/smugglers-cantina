@@ -425,4 +425,5 @@
 (reg-event-fx
  :character/new-character
  (fn [_ _]
-   {:dispatch [:character/set-character {}]}))
+   {:dispatch-n [[:character/set-character {}]
+                 [::go-to-character-builder]]}))

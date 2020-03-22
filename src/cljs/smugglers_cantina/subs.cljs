@@ -92,6 +92,12 @@
    (into {} (map (juxt :key identity) species))))
 
 (reg-sub
+ ::species-name
+ :<- [::species-map]
+ (fn [species-map [_ kw]]
+   (get-in species-map [kw :name])))
+
+(reg-sub
  ::careers
  (fn [db _]
    careers/careers))
@@ -101,6 +107,12 @@
  :<- [::careers]
  (fn [careers _]
    (into {} (map (juxt :key identity) careers))))
+
+(reg-sub
+ ::career-name
+ :<- [::career-map]
+ (fn [career-map [_ kw]]
+   (get-in career-map [kw :name])))
 
 (reg-sub
  :character/career-details
