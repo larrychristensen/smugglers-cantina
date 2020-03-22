@@ -19,7 +19,7 @@
  ::active-panel
  (fn [db _]
    (prn "ACTIVE PANEL" (:active-panel db))
-   (:active-panel db)))
+   (:active-panel db :character-builder)))
 
 (reg-sub
  ::skills

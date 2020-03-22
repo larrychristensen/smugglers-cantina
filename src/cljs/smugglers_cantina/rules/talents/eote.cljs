@@ -6,7 +6,7 @@
    {:name "Bacta Specialist", :key :bacta-specialist}
    {:name "Bad Motivator", :key :bad-motivator}
    {:name "Barrage", :key :barrage}
-   {:name "Billiant Evasion", :key :billiant-evasion}
+   {:name "Brilliant Evasion", :key :brilliant-evasion}
    {:name "Black Market Contacts", :key :black-market-contacts}
    {:name "Blooded", :key :blooded}
    {:name "Body Guard", :key :body-guard}
@@ -77,6 +77,7 @@
    {:name "Master Merchant", :key :master-merchant}
    {:name "Master of Shadows", :key :master-of-shadows}
    {:name "Master Pilot", :key :master-pilot}
+   {:name "Master Slicer", :key :master-slicer}
    {:name "Master Starhopper", :key :master-starhopper}
    {:name "Mental Fortress", :key :mental-fortress}
    {:name "Natural Brawler", :key :natural-brawler}
@@ -111,6 +112,7 @@
    {:name "Shortcut", :key :shortcut}
    {:name "Side Step", :key :side-step}
    {:name "Skilled Jockey", :key :skilled-jockey}
+   {:name "Skilled Slicer", :key :skilled-slicer}
    {:name "Smooth Talker", :key :smooth-talker}
    {:name "Sniper Shot", :key :sniper-shot}
    {:name "Soft Spot", :key :soft-spot}
