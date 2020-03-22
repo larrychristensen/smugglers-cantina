@@ -578,6 +578,31 @@
         [:span.ml2.bold value]])
      @(subscribe [:character/characteristics]))]])
 
+(defn talents-summary []
+  (let [talents-names-and-counts @(subscribe [:character/talent-names-and-counts])
+        split-loc (/ (count talents-names-and-counts) 2)
+        _ (prn "SPLIT LOC" split-loc)
+        columns (split-at split-loc talents-names-and-counts)]
+    (prn "TALENT DETAILS" talents-names-and-counts)
+    [:div
+     [:div.bold "Talents"]
+     [:div.flex
+      (doall
+       (map
+        (fn [column]
+          [:div.flex-grow-1
+           (doall
+            (map
+             (fn [[name count]]
+               (prn "NAME COUNT" name count)
+               ^{:key name}
+               [:div.flex
+                [:div name]
+                (when (> count 1)
+                  [:div.ml5.italic (str "(" count ")")])])
+             column))])
+        columns))]]))
+
 (defn character-details-panel []
   [:div.character-details-panel
    [:div.subpanel.w300
@@ -590,7 +615,8 @@
       [specializations-summary]
       [soak-value-summary]
       [characteristics-summary]
-      [skills-summary]]]]])
+      [skills-summary]
+      [:div.mt10 [talents-summary]]]]]])
 
 
 

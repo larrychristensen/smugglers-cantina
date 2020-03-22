@@ -22,8 +22,8 @@
     [:dedication]
     [:master-of-shadows]]]
 
-(defn talent-node-keyword [talent-key level]
-  (keyword (str (name talent-key) "-level-" (inc level))))
+(defn talent-node-keyword [talent-key level column]
+  (keyword (str (name talent-key) "-level-" (inc level) "-" (inc column))))
 
 (defn get-offsets [dir]
   (case dir
@@ -37,14 +37,14 @@
         other-i (+ i y)
         other-j (+ j x)
         [other-key] (get-in talent-tree [other-i other-j])]
-    (talent-node-keyword other-key other-i)))
+    (talent-node-keyword other-key other-i other-j)))
 
 (defn expand-talent-tree [talent-tree]
   (map-indexed
    (fn [i row]
      (map-indexed
       (fn [j [talent-key dirs]]
-        {:key (talent-node-keyword talent-key i)
+        {:key (talent-node-keyword talent-key i j)
          :level (inc i)
          :talent talent-key
          :dirs (set dirs)

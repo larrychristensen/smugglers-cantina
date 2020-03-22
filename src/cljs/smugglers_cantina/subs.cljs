@@ -1,6 +1,7 @@
 (ns smugglers-cantina.subs
   (:require
    [clojure.set :as sets]
+   [clojure.string :as s]
    [re-frame.core :as re-frame :refer [reg-sub subscribe]]
    [smugglers-cantina.rules.skills :as skills]
    [smugglers-cantina.rules.characteristics :as characteristics]
@@ -272,6 +273,48 @@
  :character/talents
  (fn [db [_ specialization-key]]
    (get-in db [:character :talents specialization-key])))
+
+(reg-sub
+ :character/specialization-talents
+ (fn [db _]
+   (get-in db [:character :talents])))
+
+(reg-sub
+ :character/all-talent-keys
+ :<- [:character/specialization-talents]
+ (fn [talents _]
+   (mapcat
+    (fn [talent-tree-keys]
+      (map
+       (fn [k]
+         (let [nm (name k)
+               [talent-key-name] (s/split nm "-level")]
+           (keyword talent-key-name)))
+       talent-tree-keys))
+    (vals talents))))
+
+(reg-sub
+ :character/all-talent-details
+ :<- [::talents-map]
+ :<- [:character/all-talent-keys]
+ (fn [[talents-map talent-keys]]
+   (prn "TALENTS MAP" talents-map)
+   (prn "TALENT KEYS" talent-keys)
+   (map
+    talents-map
+    talent-keys)))
+
+(reg-sub
+ :character/talent-names-and-counts
+ :<- [::talents-map]
+ :<- [:character/all-talent-keys]
+ (fn [[talents-map talent-keys]]
+   (let [counts (frequencies talent-keys)]
+     (map
+      (fn [[talent-key count]]
+        [(:name (talents-map talent-key))
+         count])
+      counts))))
 
 (reg-sub
  :character/has-talent?
